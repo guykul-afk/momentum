@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { computeDailyQuota, computeRollingAdherence, computeFocusRatio } from './index';
 import { Task, TaskInstance, DailyStats } from '../../types/models';
 
