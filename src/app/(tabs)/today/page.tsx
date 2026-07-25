@@ -53,7 +53,7 @@ export default function TodayPage() {
         <div>
           <div className="flex items-center gap-1.5 text-xs font-semibold text-cyan-600 mb-0.5">
             <Calendar className="w-3.5 h-3.5" />
-            <span>{todayFormatted}</span>
+            <span suppressHydrationWarning>{todayFormatted}</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">היום שלי</h1>
         </div>
