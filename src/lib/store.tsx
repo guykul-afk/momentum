@@ -8,6 +8,12 @@ function getTodayDateString(): string {
   return d.toISOString().split('T')[0];
 }
 
+function getTomorrowDateString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
 const INITIAL_GOALS: Goal[] = [
   {
     id: 'g-annual-1',
@@ -363,7 +369,7 @@ interface AppContextType {
   toggleTaskInstance: (taskId: string) => void;
   addRawCapture: (content: string, audioUrl?: string, audioDuration?: number) => void;
   deleteRawCapture: (id: string) => void;
-  triageApprove: (rawId: string, taskData: Partial<Task>) => void;
+  triageApprove: (rawId: string, taskData: Partial<Task>, targetDate?: 'today' | 'tomorrow' | string) => void;
   triageReject: (rawId: string) => void;
   addReflection: (reflection: Omit<EndOfDayReflection, 'id' | 'createdAt'>) => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
@@ -515,7 +521,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRawCaptures((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const triageApprove = (rawId: string, taskData: Partial<Task>) => {
+  const triageApprove = (
+    rawId: string,
+    taskData: Partial<Task>,
+    targetDate?: 'today' | 'tomorrow' | string
+  ) => {
     const newTask: Task = {
       id: `t-${Date.now()}`,
       uid: 'user-1',
@@ -538,15 +548,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setTasks((prev) => [newTask, ...prev]);
 
-    // Create instance for today if it's daily
-    const today = getTodayDateString();
+    // Create instance for selected date (today or tomorrow)
+    const targetDateStr =
+      targetDate === 'tomorrow'
+        ? getTomorrowDateString()
+        : targetDate && targetDate !== 'today'
+        ? targetDate
+        : getTodayDateString();
+
     setTaskInstances((prev) => [
       ...prev,
       {
         id: `inst-${Date.now()}`,
         uid: 'user-1',
         taskId: newTask.id,
-        date: today,
+        date: targetDateStr,
         status: 'pending',
       },
     ]);

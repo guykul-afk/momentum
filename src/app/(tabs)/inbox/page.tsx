@@ -4,19 +4,32 @@ import React, { useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { FAB } from '@/components/capture/FAB';
 import { TriageFlow } from '@/components/triage/TriageFlow';
-import { Inbox, Sparkles, Trash2, Mic, ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
+import { TriageDrawer } from '@/components/triage/TriageDrawer';
+import { RawCaptureItem } from '@/types/models';
+import {
+  Inbox,
+  Sparkles,
+  Trash2,
+  Mic,
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  SlidersHorizontal,
+  ChevronLeft,
+} from 'lucide-react';
 
 export default function InboxPage() {
   const { rawCaptures, deleteRawCapture } = useAppStore();
-  const [isTriaging, setIsTriaging] = useState(false);
+  const [isBatchTriaging, setIsBatchTriaging] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<RawCaptureItem | null>(null);
 
   const pendingCaptures = rawCaptures.filter((c) => c.status === 'inbox');
   const triagedCount = rawCaptures.filter((c) => c.status === 'triaged').length;
 
-  if (isTriaging) {
+  if (isBatchTriaging) {
     return (
       <div className="space-y-4">
-        <TriageFlow items={pendingCaptures} onComplete={() => setIsTriaging(false)} />
+        <TriageFlow items={pendingCaptures} onComplete={() => setIsBatchTriaging(false)} />
       </div>
     );
   }
@@ -37,32 +50,33 @@ export default function InboxPage() {
         </div>
       </header>
 
-      {/* Start Triage Hero Action Banner */}
+      {/* Manual Triage Hero Action Banner */}
       <div className="bg-gradient-to-br from-cyan-500 to-cyan-700 text-white rounded-3xl p-5 shadow-lg space-y-3 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-200 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              תהליך טריאז׳ חכם (AI Triage)
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              אבחון ידני ומהיר בלחיצה (Manual Triage)
             </span>
-            <h2 className="text-lg font-extrabold tracking-tight">מוכן לעבד את המשימות?</h2>
+            <h2 className="text-lg font-extrabold tracking-tight">לחץ על משימה לקביעת חשיבות ויעד</h2>
           </div>
         </div>
 
         <p className="text-xs text-cyan-100/90 leading-relaxed">
-          המר את הלכידות הגולמיות למשימות מובנות עם משקל, זמני ביצוע וכוונות ביצוע בשיטת AI.
+          לחץ על משימה שנלכדה כדי לפתוח חלון נגלל ולקבוע חשיבות (1-5), שיוך ליעד חודשי ותאריך ביצוע (היום או מחר).
         </p>
 
-        <div className="pt-2">
+        <div className="pt-1 flex items-center gap-2">
           <button
-            onClick={() => setIsTriaging(true)}
+            onClick={() => setIsBatchTriaging(true)}
             disabled={pendingCaptures.length === 0}
-            className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white hover:bg-cyan-50 text-cyan-900 font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-cyan-50 text-cyan-900 font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
-            <span>התחל טריאז׳ ({pendingCaptures.length} פריטים)</span>
-            <ArrowLeft className="w-4 h-4" />
+            <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
+            <span>טריאז׳ רציף באשף ({pendingCaptures.length})</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -95,9 +109,10 @@ export default function InboxPage() {
               return (
                 <div
                   key={item.id}
-                  className="group flex items-start justify-between p-3.5 bg-white border border-slate-200 rounded-2xl shadow-xs hover:border-cyan-300 transition-all"
+                  onClick={() => setSelectedItem(item)}
+                  className="group flex items-center justify-between p-3.5 bg-white border border-slate-200 rounded-2xl shadow-xs hover:border-cyan-400 hover:shadow-sm cursor-pointer transition-all active:scale-[0.99]"
                 >
-                  <div className="space-y-1 pr-1 flex-1">
+                  <div className="space-y-1.5 pr-1 flex-1">
                     <div className="flex items-center gap-2 text-[11px] text-slate-400">
                       <Clock className="w-3 h-3 text-slate-400" />
                       <span>{timeStr}</span>
@@ -109,15 +124,23 @@ export default function InboxPage() {
                       )}
                     </div>
 
-                    <p className="text-xs font-semibold text-slate-800 leading-relaxed">
+                    <p className="text-xs font-bold text-slate-800 leading-relaxed group-hover:text-cyan-900 transition-colors">
                       {item.content}
                     </p>
+
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-cyan-600 pt-0.5">
+                      <span>לחץ לאבחון ידני</span>
+                      <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                    </div>
                   </div>
 
                   {/* Delete Raw Capture */}
                   <button
-                    onClick={() => deleteRawCapture(item.id)}
-                    className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors mr-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteRawCapture(item.id);
+                    }}
+                    className="text-slate-400 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-colors mr-2"
                     aria-label="מחיקת פריט גולמי"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -128,6 +151,13 @@ export default function InboxPage() {
           </div>
         )}
       </section>
+
+      {/* Manual Triage Sliding Drawer */}
+      <TriageDrawer
+        item={selectedItem}
+        isOpen={Boolean(selectedItem)}
+        onClose={() => setSelectedItem(null)}
+      />
 
       {/* Floating Action Button (FAB) */}
       <FAB />
