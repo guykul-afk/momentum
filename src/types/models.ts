@@ -34,6 +34,7 @@ export interface Task {
   when?: string; // Implementation intention: trigger/time
   where?: string; // Implementation intention: location/context
   streakCount?: number; // For habits
+  postponeCount?: number; // Number of times task was postponed to tomorrow
   isHabit?: boolean;
   isMaintenance?: boolean;
 }

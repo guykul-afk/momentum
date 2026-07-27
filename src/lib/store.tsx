@@ -373,8 +373,10 @@ interface AppContextType {
   triageReject: (rawId: string) => void;
   addReflection: (reflection: Omit<EndOfDayReflection, 'id' | 'createdAt'>) => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
+  postponeTaskToTomorrow: (taskId: string) => void;
   addGoal: (goal: Omit<Goal, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => Goal;
   updateGoal: (goalId: string, updates: Partial<Goal>) => void;
+  deleteGoal: (goalId: string) => void;
   addKrCheckin: (goalId: string, value: number, notes?: string) => void;
   saveWeeklyPlan: (plan: Omit<WeeklyPlan, 'id' | 'uid' | 'createdAt'>) => void;
   performFreshStart: () => void;
@@ -594,6 +596,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const postponeTaskToTomorrow = (taskId: string) => {
+    const todayStr = getTodayDateString();
+    const tomorrowStr = getTomorrowDateString();
+
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? { ...t, postponeCount: (t.postponeCount || 0) + 1, updatedAt: Date.now() }
+          : t
+      )
+    );
+
+    setTaskInstances((prev) => {
+      const filtered = prev.filter((i) => !(i.taskId === taskId && (i.date === todayStr || i.date === tomorrowStr)));
+      return [
+        ...filtered,
+        {
+          id: `inst-${Date.now()}`,
+          uid: 'user-1',
+          taskId,
+          date: tomorrowStr,
+          status: 'pending',
+        },
+      ];
+    });
+  };
+
   const addGoal = (goalData: Omit<Goal, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => {
     const newGoal: Goal = {
       ...goalData,
@@ -611,6 +640,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateGoal = (goalId: string, updates: Partial<Goal>) => {
     setGoals((prev) =>
       prev.map((g) => (g.id === goalId ? { ...g, ...updates, updatedAt: Date.now() } : g))
+    );
+  };
+
+  const deleteGoal = (goalId: string) => {
+    const getGoalAndChildIds = (id: string, allGoals: Goal[]): string[] => {
+      const children = allGoals.filter((g) => g.parentId === id);
+      const childIds = children.flatMap((c) => getGoalAndChildIds(c.id, allGoals));
+      return [id, ...childIds];
+    };
+
+    setGoals((prevGoals) => {
+      const idsToDelete = new Set(getGoalAndChildIds(goalId, prevGoals));
+      return prevGoals.filter((g) => !idsToDelete.has(g.id));
+    });
+
+    setTasks((prevTasks) =>
+      prevTasks.map((t) => (t.goalId === goalId ? { ...t, goalId: undefined, updatedAt: Date.now() } : t))
     );
   };
 
@@ -691,8 +737,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         triageReject,
         addReflection,
         updateTask,
+        postponeTaskToTomorrow,
         addGoal,
         updateGoal,
+        deleteGoal,
         addKrCheckin,
         saveWeeklyPlan,
         performFreshStart,

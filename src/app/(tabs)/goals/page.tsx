@@ -19,11 +19,12 @@ import { GoalModal } from '@/components/goals/GoalModal';
 import { isGoalStarved } from '@/components/goals/StarveBadge';
 
 export default function GoalsPage() {
-  const { goals, addGoal, updateGoal, addKrCheckin } = useAppStore();
+  const { goals, addGoal, updateGoal, deleteGoal, addKrCheckin } = useAppStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | undefined>(undefined);
   const [modalDefaultTimeframe, setModalDefaultTimeframe] = useState<'annual' | 'monthly' | 'weekly'>('annual');
   const [modalDefaultParentId, setModalDefaultParentId] = useState<string | undefined>(undefined);
+  const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
 
   const [timeframeFilter, setTimeframeFilter] = useState<'all' | 'annual' | 'monthly' | 'weekly'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -76,6 +77,17 @@ export default function GoalsPage() {
 
   const handleCheckinKr = (goalId: string, currentKr: number) => {
     addKrCheckin(goalId, currentKr, 'עדכון מהיר מעץ היעדים');
+  };
+
+  const handleRequestDeleteGoal = (goal: Goal) => {
+    setDeletingGoal(goal);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deletingGoal) {
+      deleteGoal(deletingGoal.id);
+      setDeletingGoal(null);
+    }
   };
 
   return (
@@ -234,6 +246,7 @@ export default function GoalsPage() {
                 allGoals={filteredGoals}
                 onAddSubGoal={(parentId, timeframe) => handleOpenAddModal(parentId, timeframe)}
                 onEditGoal={handleOpenEditModal}
+                onDeleteGoal={handleRequestDeleteGoal}
                 onCheckinKr={handleCheckinKr}
                 level={0}
               />
@@ -247,11 +260,55 @@ export default function GoalsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveGoal}
+        onDelete={handleRequestDeleteGoal}
         availableParents={goals}
         initialGoal={editingGoal}
         defaultTimeframe={modalDefaultTimeframe}
         defaultParentId={modalDefaultParentId}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deletingGoal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-rose-100 text-rose-600">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-800">אישור מחיקת יעד</h3>
+                <p className="text-xs text-slate-500">פעולה זו אינה ניתנת לביטול</p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+              <p className="text-xs font-semibold text-slate-700">{deletingGoal.title}</p>
+              {goals.some((g) => g.parentId === deletingGoal.id) && (
+                <p className="text-[11px] text-rose-600 font-medium mt-1">
+                  ⚠️ שים לב: מחיקת יעד זה תביא למחיקת תתי-היעדים שתחתיו!
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeletingGoal(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors"
+              >
+                מחק לצמיתות
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

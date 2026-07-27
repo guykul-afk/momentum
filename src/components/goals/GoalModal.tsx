@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Target, Save, CheckCircle } from 'lucide-react';
+import { X, Target, Save, CheckCircle, Trash2 } from 'lucide-react';
 import { Goal } from '@/types/models';
 
 interface GoalModalProps {
@@ -12,6 +12,7 @@ interface GoalModalProps {
   initialGoal?: Goal;
   defaultTimeframe?: 'annual' | 'monthly' | 'weekly';
   defaultParentId?: string;
+  onDelete?: (goal: Goal) => void;
 }
 
 export function GoalModal({
@@ -22,6 +23,7 @@ export function GoalModal({
   initialGoal,
   defaultTimeframe = 'monthly',
   defaultParentId,
+  onDelete,
 }: GoalModalProps) {
   const [title, setTitle] = useState(initialGoal?.title || '');
   const [description, setDescription] = useState(initialGoal?.description || '');
@@ -267,21 +269,39 @@ export function GoalModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
-            >
-              ביטול
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
-            >
-              <Save className="w-4 h-4" />
-              <span>שמור יעד</span>
-            </button>
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <div>
+              {initialGoal && onDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDelete(initialGoal);
+                    onClose();
+                  }}
+                  className="px-3 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors flex items-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>מחק יעד</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+              >
+                <Save className="w-4 h-4" />
+                <span>שמור יעד</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

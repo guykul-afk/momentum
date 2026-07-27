@@ -2,25 +2,35 @@
 
 import React from 'react';
 import { Task, Goal } from '@/types/models';
-import { Check, Clock, Target, MapPin, Calendar } from 'lucide-react';
+import { Check, Clock, Target, MapPin, Calendar, CalendarPlus } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
   isCompleted: boolean;
   onToggle: () => void;
+  onPostponeToTomorrow?: () => void;
   goal?: Goal;
 }
 
-export function TaskCard({ task, isCompleted, onToggle, goal }: TaskCardProps) {
+export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, goal }: TaskCardProps) {
   const getWeightBadgeColor = (weight: number = 3) => {
     if (weight >= 4) return 'bg-cyan-100 text-cyan-800 border-cyan-300';
     if (weight === 3) return 'bg-slate-100 text-slate-700 border-slate-200';
     return 'bg-slate-50 text-slate-600 border-slate-200';
   };
 
+  const getPostponeStripeColor = (count: number = 0) => {
+    if (count === 1) return 'border-r-4 border-r-yellow-400';
+    if (count === 2) return 'border-r-4 border-r-orange-500';
+    if (count >= 3) return 'border-r-4 border-r-red-500';
+    return '';
+  };
+
+  const postponeStripe = getPostponeStripeColor(task.postponeCount);
+
   return (
     <div
-      className={`group relative flex items-start gap-3 p-3.5 rounded-2xl border transition-all duration-200 ${
+      className={`group relative flex items-start gap-3 p-3.5 rounded-2xl border transition-all duration-200 ${postponeStripe} ${
         isCompleted
           ? 'bg-slate-50/60 border-slate-200 opacity-75'
           : task.weight && task.weight >= 4
@@ -97,13 +107,43 @@ export function TaskCard({ task, isCompleted, onToggle, goal }: TaskCardProps) {
           </div>
         )}
 
-        {/* Duration Meta Info */}
-        {task.estimatedMinutes && (
-          <div className="flex items-center gap-1.5 mt-2 text-[11px] text-slate-400">
-            <Clock className="w-3 h-3 text-slate-400" />
-            <span>{task.estimatedMinutes} דקות</span>
+        {/* Bottom Actions & Meta Info */}
+        <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            {task.estimatedMinutes && (
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                <Clock className="w-3 h-3 text-slate-400" />
+                <span>{task.estimatedMinutes} דקות</span>
+              </div>
+            )}
+
+            {task.postponeCount && task.postponeCount > 0 ? (
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                  task.postponeCount === 1
+                    ? 'bg-yellow-50 text-yellow-800 border-yellow-300'
+                    : task.postponeCount === 2
+                    ? 'bg-orange-50 text-orange-800 border-orange-300'
+                    : 'bg-red-50 text-red-800 border-red-300'
+                }`}
+              >
+                הועברה {task.postponeCount}X
+              </span>
+            ) : null}
           </div>
-        )}
+
+          {!isCompleted && onPostponeToTomorrow && (
+            <button
+              type="button"
+              onClick={onPostponeToTomorrow}
+              className="flex items-center gap-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-2.5 py-1 rounded-xl transition-all active:scale-95 shrink-0"
+              title="העבר משימה למחר"
+            >
+              <CalendarPlus className="w-3.5 h-3.5" />
+              <span>העברה למחר</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

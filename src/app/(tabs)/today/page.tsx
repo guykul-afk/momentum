@@ -5,13 +5,12 @@ import { useAppStore } from '@/lib/store';
 import { DailyQuotaRing } from '@/components/tasks/DailyQuotaRing';
 import { AdherenceSparkline } from '@/components/tasks/AdherenceSparkline';
 import { TaskCard } from '@/components/tasks/TaskCard';
-import { HabitSection } from '@/components/tasks/HabitSection';
 import { MaintenanceSection } from '@/components/tasks/MaintenanceSection';
 import { computeDailyQuota } from '@/lib/metrics';
 import { Calendar, Sparkles, CheckCircle2, ListTodo } from 'lucide-react';
 
 export default function TodayPage() {
-  const { tasks, taskInstances, dailyStats, goals, toggleTaskInstance } = useAppStore();
+  const { tasks, taskInstances, dailyStats, goals, toggleTaskInstance, postponeTaskToTomorrow } = useAppStore();
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -25,7 +24,6 @@ export default function TodayPage() {
 
   // Filter tasks by categories
   const dailyTasks = tasks.filter((t) => t.type === 'daily' && !t.isHabit && !t.isMaintenance && t.isActive);
-  const habitTasks = tasks.filter((t) => t.isHabit && t.isActive);
   const maintenanceTasks = tasks.filter((t) => t.isMaintenance && t.isActive);
 
   // Daily quota calculation using lib metrics
@@ -147,22 +145,13 @@ export default function TodayPage() {
                   task={task}
                   isCompleted={isCompleted}
                   onToggle={() => toggleTaskInstance(task.id)}
+                  onPostponeToTomorrow={() => postponeTaskToTomorrow(task.id)}
                   goal={goal}
                 />
               );
             })
           )}
         </div>
-      </section>
-
-      {/* Habit Section */}
-      <section className="pt-2">
-        <HabitSection
-          habits={habitTasks}
-          taskInstances={taskInstances}
-          onToggleHabit={toggleTaskInstance}
-          todayDateStr={todayStr}
-        />
       </section>
 
       {/* Maintenance Section */}

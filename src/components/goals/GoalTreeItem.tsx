@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Plus,
   Edit2,
+  Trash2,
   CheckSquare,
 } from 'lucide-react';
 import { Goal } from '@/types/models';
@@ -18,6 +19,7 @@ interface GoalTreeItemProps {
   allGoals: Goal[];
   onAddSubGoal: (parentId: string, timeframe: 'monthly' | 'weekly') => void;
   onEditGoal: (goal: Goal) => void;
+  onDeleteGoal?: (goal: Goal) => void;
   onCheckinKr: (goalId: string, currentKr: number) => void;
   level?: number;
 }
@@ -28,6 +30,7 @@ export function GoalTreeItem({
   allGoals,
   onAddSubGoal,
   onEditGoal,
+  onDeleteGoal,
   onCheckinKr,
   level = 0,
 }: GoalTreeItemProps) {
@@ -130,6 +133,16 @@ export function GoalTreeItem({
               <Edit2 className="w-4 h-4" />
             </button>
 
+            {onDeleteGoal && (
+              <button
+                onClick={() => onDeleteGoal(goal)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                title="מחק יעד"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+
             {goal.timeframe !== 'weekly' && (
               <button
                 onClick={() => onAddSubGoal(goal.id, getSubGoalTimeframe())}
@@ -209,6 +222,7 @@ export function GoalTreeItem({
                 allGoals={allGoals}
                 onAddSubGoal={onAddSubGoal}
                 onEditGoal={onEditGoal}
+                onDeleteGoal={onDeleteGoal}
                 onCheckinKr={onCheckinKr}
                 level={level + 1}
               />
