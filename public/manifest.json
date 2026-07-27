@@ -1,0 +1,16 @@
+{
+  "name": "Momentum Tasks",
+  "short_name": "Momentum",
+  "description": "מערכת מתקדמת לניהול משימות ומומנטום יומי",
+  "start_url": "/today",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#06b6d4",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

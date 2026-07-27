@@ -11,13 +11,20 @@ const rubik = Rubik({
 export const metadata: Metadata = {
   title: 'Momentum Tasks - ניהול משימות ומומנטום יומי',
   description: 'מערכת מתקדמת לניהול משימות, הרגלים וסנכרון מומנטום יומי',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Momentum',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
+  themeColor: '#06b6d4',
 };
 
 export default function RootLayout({
