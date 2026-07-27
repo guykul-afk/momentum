@@ -42,17 +42,44 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
   ];
 
   return (
-    <div className="min-h-[100dvh] bg-slate-100/70 text-slate-800 flex justify-center">
-      {/* Container simulating a mobile device target (390px max-w on mobile, expanding gracefully) */}
-      <div className="w-full max-w-md bg-white min-h-[100dvh] shadow-xl flex flex-col relative pb-[calc(6.5rem+max(1.25rem,env(safe-area-inset-bottom,0px)))] border-x border-slate-200/60">
+    <div className="min-h-screen bg-slate-100/70 text-slate-800 flex justify-center">
+      {/* Mobile-width container with top safe-area padding and bottom navigation padding */}
+      <div className="w-full max-w-md bg-white min-h-screen flex flex-col relative border-x border-slate-200/60 app-page-wrapper">
         
-        {/* Dynamic Content */}
-        <main className="flex-1 px-4 pt-5 pb-6">
+        {/* Top Navigation Bar / Tabs Header */}
+        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 px-3 py-2 flex items-center justify-between overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 w-full justify-between">
+            {navItems.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-cyan-500 text-white shadow-xs font-semibold'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {item.label}
+                  {item.badge !== undefined && (
+                    <span className="mr-1 bg-white text-cyan-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </header>
+
+        {/* Main Content (Standard Document Scroll) */}
+        <main className="flex-1 px-4 pt-2 pb-4">
           {children}
         </main>
 
-        {/* Thumb-Accessible Bottom Navigation Bar for iOS/Android Standalone Web App */}
-        <nav className="fixed bottom-0 left-0 right-0 mx-auto max-w-md bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 pt-2.5 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] flex justify-around items-center z-50 shadow-2xl">
+        {/* Fixed Thumb-Accessible Bottom Navigation Bar */}
+        <nav className="app-bottom-nav px-2 flex justify-around items-center">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;

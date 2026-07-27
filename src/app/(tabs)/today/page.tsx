@@ -53,7 +53,7 @@ export default function TodayPage() {
             <Calendar className="w-3.5 h-3.5" />
             <span suppressHydrationWarning>{todayFormatted}</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">היום שלי</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">היום שלי (v14)</h1>
         </div>
         <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-600 font-bold text-sm">
           <Sparkles className="w-5 h-5" />

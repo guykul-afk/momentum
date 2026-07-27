@@ -24,3 +24,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom PWA Mobile Layout Classes */
+.app-page-wrapper {
+  padding-top: max(44px, env(safe-area-inset-top, 44px)) !important;
+  padding-bottom: calc(85px + env(safe-area-inset-bottom, 20px)) !important;
+}
+
+.app-bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: 28rem !important; /* max-w-md */
+  z-index: 99999 !important;
+  -webkit-transform: translateZ(0) !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
+  padding-top: 8px !important;
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)) !important;
+  min-height: calc(64px + max(20px, env(safe-area-inset-bottom, 20px))) !important;
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.12) !important;
+}

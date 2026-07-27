@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: 'מערכת מתקדמת לניהול משימות, הרגלים וסנכרון מומנטום יומי',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Momentum',
   },
 };
