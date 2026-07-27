@@ -44,7 +44,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-800 flex justify-center">
       {/* Container simulating a mobile device target (390px max-w on mobile, expanding gracefully) */}
-      <div className="w-full max-w-md bg-white min-h-screen shadow-xl flex flex-col relative pb-24 border-x border-slate-200/60">
+      <div className="w-full max-w-md bg-white min-h-screen shadow-xl flex flex-col relative pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] border-x border-slate-200/60">
         
         {/* Dynamic Content */}
         <main className="flex-1 px-4 pt-5 pb-6">
@@ -52,7 +52,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
         </main>
 
         {/* Thumb-Accessible Bottom Navigation Bar */}
-        <nav className="fixed bottom-0 inset-x-0 mx-auto max-w-md bg-white/90 backdrop-blur-md border-t border-slate-200/80 px-4 py-2 flex justify-around items-center z-40 shadow-lg">
+        <nav className="fixed bottom-0 left-0 right-0 mx-auto max-w-md bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] flex justify-around items-center z-50 shadow-2xl">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Rubik } from 'next/font/google';
 import './globals.css';
 import { AppProvider } from '@/lib/store';
@@ -11,6 +11,13 @@ const rubik = Rubik({
 export const metadata: Metadata = {
   title: 'Momentum Tasks - ניהול משימות ומומנטום יומי',
   description: 'מערכת מתקדמת לניהול משימות, הרגלים וסנכרון מומנטום יומי',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
