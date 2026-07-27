@@ -1,6 +1,8 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
-    "site": "momentum-tasks-guy",
     "public": "out",
     "ignore": [
       "firebase.json",

@@ -1,7 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Task, TaskInstance, RawCaptureItem, DailyStats, Goal, EndOfDayReflection } from '../types/models';
+import { Task, TaskInstance, RawCaptureItem, DailyStats, Goal, EndOfDayReflection, KrCheckin, WeeklyPlan, MonthlyCloseReport } from '../types/models';
+import { db, initAuth } from './firebase';
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 function getTodayDateString(): string {
   const d = new Date();
@@ -353,9 +355,6 @@ const INITIAL_DAILY_STATS: DailyStats[] = [
   { id: 'ds-6', uid: 'user-1', date: '2026-07-23', tasksCompleted: 3, totalTasks: 4, dailyQuota: 4, adherence: 0.75, focusRatio: 0.67, createdAt: 0 },
   { id: 'ds-7', uid: 'user-1', date: '2026-07-24', tasksCompleted: 3, totalTasks: 4, dailyQuota: 4, adherence: 0.75, focusRatio: 0.75, createdAt: 0 },
 ];
-
-import { KrCheckin, WeeklyPlan, MonthlyCloseReport } from '../types/models';
-
 interface AppContextType {
   tasks: Task[];
   taskInstances: TaskInstance[];
@@ -398,6 +397,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    initAuth();
+
     try {
       const savedTasks = localStorage.getItem('momentum_tasks');
       const savedInstances = localStorage.getItem('momentum_instances');
@@ -435,6 +436,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoaded(true);
     }
+
+    // Real-time Firestore Listeners
+    const unsubGoals = onSnapshot(collection(db, 'goals'), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map((d) => d.data() as Goal);
+        setGoals(items);
+      }
+    });
+
+    const unsubTasks = onSnapshot(collection(db, 'tasks'), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map((d) => d.data() as Task);
+        setTasks(items);
+      }
+    });
+
+    const unsubInstances = onSnapshot(collection(db, 'taskInstances'), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map((d) => d.data() as TaskInstance);
+        setTaskInstances(items);
+      }
+    });
+
+    const unsubCaptures = onSnapshot(collection(db, 'rawCaptures'), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map((d) => d.data() as RawCaptureItem);
+        setRawCaptures(items);
+      }
+    });
+
+    return () => {
+      unsubGoals();
+      unsubTasks();
+      unsubInstances();
+      unsubCaptures();
+    };
   }, []);
 
   useEffect(() => {
@@ -517,10 +554,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
     };
     setRawCaptures((prev) => [newItem, ...prev]);
+    setDoc(doc(db, 'rawCaptures', newItem.id), newItem).catch((err) => console.warn('Firestore set error:', err));
   };
 
   const deleteRawCapture = (id: string) => {
     setRawCaptures((prev) => prev.filter((item) => item.id !== id));
+    deleteDoc(doc(db, 'rawCaptures', id)).catch((err) => console.warn('Firestore delete error:', err));
   };
 
   const triageApprove = (
@@ -549,6 +588,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setTasks((prev) => [newTask, ...prev]);
+    setDoc(doc(db, 'tasks', newTask.id), newTask).catch((err) => console.warn('Firestore set error:', err));
 
     // Create instance for selected date (today or tomorrow)
     const targetDateStr =
@@ -558,20 +598,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ? targetDate
         : getTodayDateString();
 
-    setTaskInstances((prev) => [
-      ...prev,
-      {
-        id: `inst-${Date.now()}`,
-        uid: 'user-1',
-        taskId: newTask.id,
-        date: targetDateStr,
-        status: 'pending',
-      },
-    ]);
+    const newInstance: TaskInstance = {
+      id: `inst-${Date.now()}`,
+      uid: 'user-1',
+      taskId: newTask.id,
+      date: targetDateStr,
+      status: 'pending',
+    };
+
+    setTaskInstances((prev) => [...prev, newInstance]);
+    setDoc(doc(db, 'taskInstances', newInstance.id), newInstance).catch((err) => console.warn('Firestore set error:', err));
 
     // Mark capture as triaged
     setRawCaptures((prev) =>
-      prev.map((c) => (c.id === rawId ? { ...c, status: 'triaged' } : c))
+      prev.map((c) => {
+        if (c.id === rawId) {
+          const updated = { ...c, status: 'triaged' as const };
+          setDoc(doc(db, 'rawCaptures', rawId), updated, { merge: true }).catch((err) => console.warn('Firestore update error:', err));
+          return updated;
+        }
+        return c;
+      })
     );
   };
 
@@ -592,7 +639,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateTask = (taskId: string, updates: Partial<Task>) => {
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, ...updates, updatedAt: Date.now() } : t))
+      prev.map((t) => {
+        if (t.id === taskId) {
+          const updated = { ...t, ...updates, updatedAt: Date.now() };
+          setDoc(doc(db, 'tasks', taskId), updated, { merge: true }).catch((err) => console.warn('Firestore update error:', err));
+          return updated;
+        }
+        return t;
+      })
     );
   };
 
@@ -601,26 +655,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const tomorrowStr = getTomorrowDateString();
 
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId
-          ? { ...t, postponeCount: (t.postponeCount || 0) + 1, updatedAt: Date.now() }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id === taskId) {
+          const updated = { ...t, postponeCount: (t.postponeCount || 0) + 1, updatedAt: Date.now() };
+          setDoc(doc(db, 'tasks', taskId), updated, { merge: true }).catch((err) => console.warn('Firestore update error:', err));
+          return updated;
+        }
+        return t;
+      })
     );
+
+    const newInstance: TaskInstance = {
+      id: `inst-${Date.now()}`,
+      uid: 'user-1',
+      taskId,
+      date: tomorrowStr,
+      status: 'pending',
+    };
 
     setTaskInstances((prev) => {
       const filtered = prev.filter((i) => !(i.taskId === taskId && (i.date === todayStr || i.date === tomorrowStr)));
-      return [
-        ...filtered,
-        {
-          id: `inst-${Date.now()}`,
-          uid: 'user-1',
-          taskId,
-          date: tomorrowStr,
-          status: 'pending',
-        },
-      ];
+      return [...filtered, newInstance];
     });
+
+    setDoc(doc(db, 'taskInstances', newInstance.id), newInstance).catch((err) => console.warn('Firestore set error:', err));
   };
 
   const addGoal = (goalData: Omit<Goal, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => {
@@ -634,12 +692,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lastPointsAssignedAt: Date.now(),
     };
     setGoals((prev) => [...prev, newGoal]);
+    setDoc(doc(db, 'goals', newGoal.id), newGoal).catch((err) => console.warn('Firestore set error:', err));
     return newGoal;
   };
 
   const updateGoal = (goalId: string, updates: Partial<Goal>) => {
     setGoals((prev) =>
-      prev.map((g) => (g.id === goalId ? { ...g, ...updates, updatedAt: Date.now() } : g))
+      prev.map((g) => {
+        if (g.id === goalId) {
+          const updated = { ...g, ...updates, updatedAt: Date.now() };
+          setDoc(doc(db, 'goals', goalId), updated, { merge: true }).catch((err) => console.warn('Firestore update error:', err));
+          return updated;
+        }
+        return g;
+      })
     );
   };
 
@@ -650,9 +716,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return [id, ...childIds];
     };
 
-    setGoals((prevGoals) => {
-      const idsToDelete = new Set(getGoalAndChildIds(goalId, prevGoals));
-      return prevGoals.filter((g) => !idsToDelete.has(g.id));
+    const idsToDelete = getGoalAndChildIds(goalId, goals);
+    const idsToDeleteSet = new Set(idsToDelete);
+
+    setGoals((prevGoals) => prevGoals.filter((g) => !idsToDeleteSet.has(g.id)));
+
+    idsToDelete.forEach((id) => {
+      deleteDoc(doc(db, 'goals', id)).catch((err) => console.warn('Firestore delete error:', err));
     });
 
     setTasks((prevTasks) =>
