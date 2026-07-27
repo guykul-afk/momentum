@@ -104,94 +104,93 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     initAuth();
 
     try {
-      const savedTasks = localStorage.getItem('momentum_tasks');
-      const savedInstances = localStorage.getItem('momentum_instances');
-      const savedCaptures = localStorage.getItem('momentum_captures');
-      const savedStats = localStorage.getItem('momentum_stats');
-      const savedGoals = localStorage.getItem('momentum_goals');
-      const savedReflections = localStorage.getItem('momentum_reflections');
-      const savedCheckins = localStorage.getItem('momentum_kr_checkins');
-      const savedWeeklyPlans = localStorage.getItem('momentum_weekly_plans');
-      const savedMonthlyReports = localStorage.getItem('momentum_monthly_reports');
+      // Force clear old cached dummy data if reset flag not present
+      const isReset = localStorage.getItem('momentum_reset_v2');
+      if (!isReset) {
+        localStorage.removeItem('momentum_tasks');
+        localStorage.removeItem('momentum_instances');
+        localStorage.removeItem('momentum_captures');
+        localStorage.removeItem('momentum_stats');
+        localStorage.removeItem('momentum_goals');
+        localStorage.removeItem('momentum_reflections');
+        localStorage.removeItem('momentum_kr_checkins');
+        localStorage.removeItem('momentum_weekly_plans');
+        localStorage.removeItem('momentum_monthly_reports');
+        localStorage.setItem('momentum_reset_v2', 'true');
+      } else {
+        const savedTasks = localStorage.getItem('momentum_tasks');
+        const savedInstances = localStorage.getItem('momentum_instances');
+        const savedCaptures = localStorage.getItem('momentum_captures');
+        const savedStats = localStorage.getItem('momentum_stats');
+        const savedGoals = localStorage.getItem('momentum_goals');
+        const savedReflections = localStorage.getItem('momentum_reflections');
+        const savedCheckins = localStorage.getItem('momentum_kr_checkins');
+        const savedWeeklyPlans = localStorage.getItem('momentum_weekly_plans');
+        const savedMonthlyReports = localStorage.getItem('momentum_monthly_reports');
 
-      if (savedTasks) setTasks(JSON.parse(savedTasks));
-      if (savedInstances) setTaskInstances(JSON.parse(savedInstances));
-      if (savedCaptures) setRawCaptures(JSON.parse(savedCaptures));
-      if (savedStats) setDailyStats(JSON.parse(savedStats));
-      if (savedGoals) setGoals(JSON.parse(savedGoals));
-      if (savedReflections) setReflections(JSON.parse(savedReflections));
-      if (savedCheckins) setKrCheckins(JSON.parse(savedCheckins));
-      if (savedWeeklyPlans) setWeeklyPlans(JSON.parse(savedWeeklyPlans));
-      if (savedMonthlyReports) setMonthlyReports(JSON.parse(savedMonthlyReports));
+        if (savedTasks) setTasks(JSON.parse(savedTasks));
+        if (savedInstances) setTaskInstances(JSON.parse(savedInstances));
+        if (savedCaptures) setRawCaptures(JSON.parse(savedCaptures));
+        if (savedStats) setDailyStats(JSON.parse(savedStats));
+        if (savedGoals) setGoals(JSON.parse(savedGoals));
+        if (savedReflections) setReflections(JSON.parse(savedReflections));
+        if (savedCheckins) setKrCheckins(JSON.parse(savedCheckins));
+        if (savedWeeklyPlans) setWeeklyPlans(JSON.parse(savedWeeklyPlans));
+        if (savedMonthlyReports) setMonthlyReports(JSON.parse(savedMonthlyReports));
+      }
     } catch (e) {
       console.error('Failed to load from localStorage', e);
     } finally {
       setIsLoaded(true);
     }
 
-    // Real-time Firestore Listeners for ALL collections
+    // Real-time Firestore Listeners for ALL collections (sync empty state properly)
     const unsubGoals = onSnapshot(collection(db, 'goals'), (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map((d) => d.data() as Goal);
-        setGoals(items);
-        setLastSyncedAt(Date.now());
-      }
+      const items = snapshot.docs.map((d) => d.data() as Goal);
+      setGoals(items);
+      setLastSyncedAt(Date.now());
     });
 
     const unsubTasks = onSnapshot(collection(db, 'tasks'), (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map((d) => d.data() as Task);
-        setTasks(items);
-        setLastSyncedAt(Date.now());
-      }
+      const items = snapshot.docs.map((d) => d.data() as Task);
+      setTasks(items);
+      setLastSyncedAt(Date.now());
     });
 
     const unsubInstances = onSnapshot(collection(db, 'taskInstances'), (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map((d) => d.data() as TaskInstance);
-        setTaskInstances(items);
-        setLastSyncedAt(Date.now());
-      }
+      const items = snapshot.docs.map((d) => d.data() as TaskInstance);
+      setTaskInstances(items);
+      setLastSyncedAt(Date.now());
     });
 
     const unsubCaptures = onSnapshot(collection(db, 'rawCaptures'), (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map((d) => d.data() as RawCaptureItem);
-        setRawCaptures(items);
-        setLastSyncedAt(Date.now());
-      }
+      const items = snapshot.docs.map((d) => d.data() as RawCaptureItem);
+      setRawCaptures(items);
+      setLastSyncedAt(Date.now());
     });
 
     const unsubReflections = onSnapshot(collection(db, 'reflections'), (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map((d) => d.data() as EndOfDayReflection);
-        setReflections(items);
-        setLastSyncedAt(Date.now());
-      }
+      const items = snapshot.docs.map((d) => d.data() as EndOfDayReflection);
+      setReflections(items);
+      setLastSyncedAt(Date.now());
     });
 
     const unsubCheckins = onSnapshot(collection(db, 'krCheckins'), (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map((d) => d.data() as KrCheckin);
-        setKrCheckins(items);
-        setLastSyncedAt(Date.now());
-      }
+      const items = snapshot.docs.map((d) => d.data() as KrCheckin);
+      setKrCheckins(items);
+      setLastSyncedAt(Date.now());
     });
 
     const unsubWeeklyPlans = onSnapshot(collection(db, 'weeklyPlans'), (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map((d) => d.data() as WeeklyPlan);
-        setWeeklyPlans(items);
-        setLastSyncedAt(Date.now());
-      }
+      const items = snapshot.docs.map((d) => d.data() as WeeklyPlan);
+      setWeeklyPlans(items);
+      setLastSyncedAt(Date.now());
     });
 
     const unsubMonthlyReports = onSnapshot(collection(db, 'monthlyReports'), (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map((d) => d.data() as MonthlyCloseReport);
-        setMonthlyReports(items);
-        setLastSyncedAt(Date.now());
-      }
+      const items = snapshot.docs.map((d) => d.data() as MonthlyCloseReport);
+      setMonthlyReports(items);
+      setLastSyncedAt(Date.now());
     });
 
     return () => {
