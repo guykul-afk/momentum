@@ -6,13 +6,22 @@ import { usePathname } from 'next/navigation';
 import { CalendarCheck, Inbox, Moon, Target, TrendingUp } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
+import { Plus } from 'lucide-react';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+import { QuickAddModal } from '@/components/QuickAddModal';
 
 export default function TabsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { rawCaptures } = useAppStore();
+  const [isQuickAddOpen, setIsQuickAddOpen] = React.useState(false);
+  const [quickAddDefaultTab, setQuickAddDefaultTab] = React.useState<'goal' | 'task'>('goal');
 
   const pendingInboxCount = rawCaptures.filter((c) => c.status === 'inbox').length;
+
+  const openQuickAdd = (tab: 'goal' | 'task') => {
+    setQuickAddDefaultTab(tab);
+    setIsQuickAddOpen(true);
+  };
 
   const navItems = [
     {
@@ -48,13 +57,25 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       {/* Mobile-width container with top safe-area padding and bottom navigation padding */}
       <div className="w-full max-w-md bg-white min-h-screen flex flex-col relative border-x border-slate-200/60 app-page-wrapper">
         
-        {/* Top Header Bar with Sync Status Indicator */}
+        {/* Top Header Bar with Sync Status Indicator & Quick Add Button */}
         <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 px-3 py-2 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-bold bg-linear-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
               Momentum
             </span>
-            <SyncStatusBadge />
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openQuickAdd('goal')}
+                className="flex items-center gap-1 px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white text-xs font-bold rounded-full shadow-xs transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>יעד חדש</span>
+              </button>
+
+              <SyncStatusBadge />
+            </div>
           </div>
           <div className="flex items-center gap-1.5 w-full justify-between overflow-x-auto no-scrollbar pb-0.5">
             {navItems.map((item) => {
@@ -122,6 +143,26 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
             );
           })}
         </nav>
+
+        {/* Floating Action Button (FAB) for Quick Goal/Task Addition */}
+        <button
+          type="button"
+          onClick={() => openQuickAdd('goal')}
+          title="הוסף יעד או משימה"
+          className="fixed bottom-20 left-6 sm:left-auto z-40 p-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl active:scale-90 transition-all flex items-center justify-center group"
+        >
+          <Plus className="w-6 h-6 stroke-[2.5]" />
+          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-xs font-bold mr-0 group-hover:mr-1.5">
+            הוסף יעד / משימה
+          </span>
+        </button>
+
+        {/* Global Quick Add Modal */}
+        <QuickAddModal
+          isOpen={isQuickAddOpen}
+          onClose={() => setIsQuickAddOpen(false)}
+          defaultTab={quickAddDefaultTab}
+        />
       </div>
     </div>
   );
