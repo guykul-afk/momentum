@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { CalendarCheck, Inbox, Moon, Target, TrendingUp } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
+import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+
 export default function TabsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { rawCaptures } = useAppStore();
@@ -46,9 +48,15 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       {/* Mobile-width container with top safe-area padding and bottom navigation padding */}
       <div className="w-full max-w-md bg-white min-h-screen flex flex-col relative border-x border-slate-200/60 app-page-wrapper">
         
-        {/* Top Navigation Bar / Tabs Header */}
-        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 px-3 py-2 flex items-center justify-between overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-1.5 w-full justify-between">
+        {/* Top Header Bar with Sync Status Indicator */}
+        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 px-3 py-2 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold bg-linear-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+              Momentum
+            </span>
+            <SyncStatusBadge />
+          </div>
+          <div className="flex items-center gap-1.5 w-full justify-between overflow-x-auto no-scrollbar pb-0.5">
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (

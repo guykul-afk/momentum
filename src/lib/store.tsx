@@ -16,345 +16,8 @@ function getTomorrowDateString(): string {
   return d.toISOString().split('T')[0];
 }
 
-const INITIAL_GOALS: Goal[] = [
-  {
-    id: 'g-annual-1',
-    uid: 'user-1',
-    title: 'השקת מוצר Momentum v1.0 והרחבת בסיס משתמשים',
-    description: 'בניית מוצר מוביל לניהול מומנטום אישי והשקתו ל-1,000 משתמשים הראשונים',
-    timeframe: 'annual',
-    krTitle: '1,000 משתמשים פעילים',
-    krTarget: 1000,
-    krCurrent: 650,
-    krUnit: 'משתמשים',
-    effortTargetPoints: 200,
-    effortCompletedPoints: 170,
-    category: 'work',
-    lastPointsAssignedAt: Date.now() - 86400000 * 2,
-    createdAt: Date.now() - 86400000 * 60,
-    updatedAt: Date.now() - 86400000 * 2,
-    status: 'active',
-  },
-  {
-    id: 'g-monthly-1',
-    uid: 'user-1',
-    parentId: 'g-annual-1',
-    title: 'פיתוח 4 ריטואלים עיקריים ומערכת יעדים',
-    description: 'בניית מסכי עץ יעדים, סטטיסטיקה, סיכום שבועי וסיכום חודשי',
-    timeframe: 'monthly',
-    krTitle: '4 ריטואלים מוכנים לייצור',
-    krTarget: 4,
-    krCurrent: 1,
-    krUnit: 'ריטואלים',
-    effortTargetPoints: 60,
-    effortCompletedPoints: 48, // 80% effort vs 25% KR = 55% gap (>30% Coral alert!)
-    category: 'work',
-    lastPointsAssignedAt: Date.now() - 86400000 * 1,
-    createdAt: Date.now() - 86400000 * 20,
-    updatedAt: Date.now() - 86400000 * 1,
-    status: 'active',
-  },
-  {
-    id: 'g-weekly-1',
-    uid: 'user-1',
-    parentId: 'g-monthly-1',
-    title: 'מסך עץ יעדים, סטטיסטיקה ו-2 ריטואלים ברמת RTL',
-    description: 'סיום ארבעת המסכים הנדרשים ע"י ארכיטקט התוכנה',
-    timeframe: 'weekly',
-    krTitle: '4 רכיבים מלאים פועלים',
-    krTarget: 4,
-    krCurrent: 3,
-    krUnit: 'רכיבים',
-    effortTargetPoints: 20,
-    effortCompletedPoints: 16,
-    category: 'work',
-    lastPointsAssignedAt: Date.now() - 86400000 * 1,
-    createdAt: Date.now() - 86400000 * 4,
-    updatedAt: Date.now() - 86400000 * 1,
-    status: 'active',
-  },
-  {
-    id: 'g-annual-2',
-    uid: 'user-1',
-    title: 'שגרה בריאה, אנרגיה וכושר גופני גבוה',
-    description: 'אימונים סדירים, תזונה מבוקרת ואיזון אנרגטי',
-    timeframe: 'annual',
-    krTitle: '150 אימונים שנתיים',
-    krTarget: 150,
-    krCurrent: 45,
-    krUnit: 'אימונים',
-    effortTargetPoints: 150,
-    effortCompletedPoints: 45,
-    category: 'health',
-    lastPointsAssignedAt: Date.now() - 86400000 * 3,
-    createdAt: Date.now() - 86400000 * 90,
-    updatedAt: Date.now() - 86400000 * 3,
-    status: 'active',
-  },
-  {
-    id: 'g-monthly-2',
-    uid: 'user-1',
-    parentId: 'g-annual-2',
-    title: '16 אימוני כוח והידראוטיזציה יומית',
-    description: 'התמדה ב-4 אימונים בשבוע לאורך כל החודש',
-    timeframe: 'monthly',
-    krTitle: '16 אימונים בחודש',
-    krTarget: 16,
-    krCurrent: 12,
-    krUnit: 'אימונים',
-    effortTargetPoints: 40,
-    effortCompletedPoints: 30,
-    category: 'health',
-    lastPointsAssignedAt: Date.now() - 86400000 * 3,
-    createdAt: Date.now() - 86400000 * 20,
-    updatedAt: Date.now() - 86400000 * 3,
-    status: 'active',
-  },
-  {
-    id: 'g-weekly-2',
-    uid: 'user-1',
-    parentId: 'g-monthly-2',
-    title: '4 אימוני כושר שבועיים בשעות הבוקר',
-    description: 'שמירה על רצף הרגלים פעיל',
-    timeframe: 'weekly',
-    krTitle: '4 אימונים בשבוע',
-    krTarget: 4,
-    krCurrent: 3,
-    krUnit: 'אימונים',
-    effortTargetPoints: 10,
-    effortCompletedPoints: 8,
-    category: 'health',
-    lastPointsAssignedAt: Date.now() - 86400000 * 3,
-    createdAt: Date.now() - 86400000 * 5,
-    updatedAt: Date.now() - 86400000 * 3,
-    status: 'active',
-  },
-  {
-    id: 'g-annual-3',
-    uid: 'user-1',
-    title: 'כתיבת ספר מקצועי בנושא ארכיטקטורת תוכנה',
-    description: 'תיעוד ניסיון מעשי והוצאה לאור',
-    timeframe: 'annual',
-    krTitle: '10 פרקים כתובים',
-    krTarget: 10,
-    krCurrent: 1,
-    krUnit: 'פרקים',
-    effortTargetPoints: 100,
-    effortCompletedPoints: 10,
-    category: 'personal',
-    lastPointsAssignedAt: Date.now() - 86400000 * 20, // 20 days ago > 14 days (STARVED!)
-    createdAt: Date.now() - 86400000 * 100,
-    updatedAt: Date.now() - 86400000 * 20,
-    status: 'active',
-  },
-];
+export type SyncStatus = 'synced' | 'syncing' | 'offline';
 
-const INITIAL_TASKS: Task[] = [
-  {
-    id: 't-1',
-    uid: 'user-1',
-    goalId: 'g-weekly-1',
-    title: 'בדיקת UI ורספונסיביות של מסך היום',
-    description: 'לוודא תמיכה ב-390px iPhone ותקן RTL מלא',
-    type: 'daily',
-    isActive: true,
-    weight: 5,
-    estimatedMinutes: 45,
-    category: 'work',
-    when: 'בשעה 10:00 בבוקר עם תחילת יום העבודה',
-    where: 'בחדר עבודה שקט ליד השולחן',
-    createdAt: Date.now() - 86400000 * 2,
-    updatedAt: Date.now(),
-  },
-  {
-    id: 't-2',
-    uid: 'user-1',
-    goalId: 'g-weekly-1',
-    title: 'סנכרון ארכיטקטורה מול תשתית AI Triage',
-    description: 'סיום הגדרת fallback וסכימת AI',
-    type: 'daily',
-    isActive: true,
-    weight: 4,
-    estimatedMinutes: 30,
-    category: 'work',
-    when: 'מיד אחרי פגישת הצוות ב-11:30',
-    where: 'מחשב נייד - סביבת פיתוח',
-    createdAt: Date.now() - 86400000 * 2,
-    updatedAt: Date.now(),
-  },
-  {
-    id: 't-3',
-    uid: 'user-1',
-    goalId: 'g-weekly-2',
-    title: 'אימון כושר יומי 30 דקות',
-    description: 'אימון אינטרוולים קצר להגברת האנרגיה',
-    type: 'daily',
-    isActive: true,
-    weight: 3,
-    estimatedMinutes: 30,
-    category: 'health',
-    isHabit: true,
-    streakCount: 6,
-    createdAt: Date.now() - 86400000 * 5,
-    updatedAt: Date.now(),
-  },
-  {
-    id: 't-4',
-    uid: 'user-1',
-    title: 'שתיית 2 ליטר מים',
-    description: 'שמירה על הידרציה במהלך יום העבודה',
-    type: 'daily',
-    isActive: true,
-    weight: 2,
-    estimatedMinutes: 5,
-    category: 'health',
-    isHabit: true,
-    streakCount: 14,
-    createdAt: Date.now() - 86400000 * 14,
-    updatedAt: Date.now(),
-  },
-  {
-    id: 't-5',
-    uid: 'user-1',
-    title: 'עבור על מיילים נכנסים והודעות Slack',
-    description: 'ניקוי אינבוקס וסינון משימות חשובות',
-    type: 'recurring',
-    isActive: true,
-    weight: 2,
-    estimatedMinutes: 15,
-    category: 'maintenance',
-    isMaintenance: true,
-    createdAt: Date.now() - 86400000 * 10,
-    updatedAt: Date.now(),
-  },
-  {
-    id: 't-6',
-    uid: 'user-1',
-    title: 'גיבוי קבצי פרויקט וסנכרון Git',
-    description: 'בדיקת קומיטים אחרונים ודחיפה למאגר',
-    type: 'recurring',
-    isActive: true,
-    weight: 2,
-    estimatedMinutes: 10,
-    category: 'maintenance',
-    isMaintenance: true,
-    createdAt: Date.now() - 86400000 * 10,
-    updatedAt: Date.now(),
-  },
-];
-
-const INITIAL_INSTANCES: TaskInstance[] = [
-  {
-    id: 'inst-1',
-    uid: 'user-1',
-    taskId: 't-1',
-    date: getTodayDateString(),
-    status: 'completed',
-    completedAt: Date.now() - 3600000,
-  },
-  {
-    id: 'inst-2',
-    uid: 'user-1',
-    taskId: 't-2',
-    date: getTodayDateString(),
-    status: 'pending',
-  },
-  {
-    id: 'inst-3',
-    uid: 'user-1',
-    taskId: 't-3',
-    date: getTodayDateString(),
-    status: 'completed',
-    completedAt: Date.now() - 7200000,
-  },
-  {
-    id: 'inst-4',
-    uid: 'user-1',
-    taskId: 't-4',
-    date: getTodayDateString(),
-    status: 'completed',
-    completedAt: Date.now() - 14400000,
-  },
-  {
-    id: 'inst-5',
-    uid: 'user-1',
-    taskId: 't-5',
-    date: getTodayDateString(),
-    status: 'pending',
-  },
-  {
-    id: 'inst-6',
-    uid: 'user-1',
-    taskId: 't-6',
-    date: getTodayDateString(),
-    status: 'pending',
-  },
-];
-
-const INITIAL_RAW_CAPTURES: RawCaptureItem[] = [
-  {
-    id: 'cap-1',
-    uid: 'user-1',
-    content: 'להתקשר ללקוח לגבי משוב על העיצוב החדש ביום ראשון',
-    createdAt: Date.now() - 3600000 * 3,
-    status: 'inbox',
-    suggestedBreakdown: {
-      title: 'שיחת משוב עיצוב מול הלקוח',
-      weight: 4,
-      estimatedMinutes: 30,
-      type: 'one-off',
-      category: 'work',
-      goalId: 'g-weekly-1',
-      when: 'יום ראשון בשעה 11:00 בבוקר',
-      where: 'שיחת Google Meet מחדר הישיבות',
-      aiRationale: 'משימה בעלת השפעה גבוהה על שביעות רצון הלקוח והתקדמות הפרויקט',
-    },
-  },
-  {
-    id: 'cap-2',
-    uid: 'user-1',
-    content: 'הקלטת קול: להזמין ציוד ארגונומי למשרד (כיסא ומסך משני)',
-    createdAt: Date.now() - 3600000 * 5,
-    audioDuration: 12,
-    status: 'inbox',
-    suggestedBreakdown: {
-      title: 'הזמנת ציוד ארגונומי למשרד',
-      weight: 2,
-      estimatedMinutes: 20,
-      type: 'one-off',
-      category: 'personal',
-      aiRationale: 'משימת תפעול קלה לשיפור סביבת העבודה',
-    },
-  },
-  {
-    id: 'cap-3',
-    uid: 'user-1',
-    content: 'להכין מצגת סיכום רבעוני עבור צוות ההנהלה',
-    createdAt: Date.now() - 3600000 * 8,
-    status: 'inbox',
-    suggestedBreakdown: {
-      title: 'הכנת מצגת סיכום רבעוני',
-      weight: 5,
-      estimatedMinutes: 60,
-      type: 'one-off',
-      category: 'work',
-      goalId: 'g-weekly-1',
-      when: 'מחר בשעה 09:00 בבוקר לפני הפגישה',
-      where: 'חדר עבודה שקט בלפטופ',
-      aiRationale: 'משימה אסטרטגית במשקל גבוה 5/5, מומלץ להגדיר כוונת ביצוע (When & Where)',
-    },
-  },
-];
-
-const INITIAL_DAILY_STATS: DailyStats[] = [
-  { id: 'ds-1', uid: 'user-1', date: '2026-07-18', tasksCompleted: 4, totalTasks: 5, dailyQuota: 4, adherence: 1.0, focusRatio: 0.8, createdAt: 0 },
-  { id: 'ds-2', uid: 'user-1', date: '2026-07-19', tasksCompleted: 3, totalTasks: 4, dailyQuota: 4, adherence: 0.75, focusRatio: 0.67, createdAt: 0 },
-  { id: 'ds-3', uid: 'user-1', date: '2026-07-20', tasksCompleted: 4, totalTasks: 4, dailyQuota: 4, adherence: 1.0, focusRatio: 0.75, createdAt: 0 },
-  { id: 'ds-4', uid: 'user-1', date: '2026-07-21', tasksCompleted: 2, totalTasks: 4, dailyQuota: 4, adherence: 0.5, focusRatio: 0.5, createdAt: 0 },
-  { id: 'ds-5', uid: 'user-1', date: '2026-07-22', tasksCompleted: 4, totalTasks: 4, dailyQuota: 4, adherence: 1.0, focusRatio: 0.8, createdAt: 0 },
-  { id: 'ds-6', uid: 'user-1', date: '2026-07-23', tasksCompleted: 3, totalTasks: 4, dailyQuota: 4, adherence: 0.75, focusRatio: 0.67, createdAt: 0 },
-  { id: 'ds-7', uid: 'user-1', date: '2026-07-24', tasksCompleted: 3, totalTasks: 4, dailyQuota: 4, adherence: 0.75, focusRatio: 0.75, createdAt: 0 },
-];
 interface AppContextType {
   tasks: Task[];
   taskInstances: TaskInstance[];
@@ -365,6 +28,8 @@ interface AppContextType {
   krCheckins: KrCheckin[];
   weeklyPlans: WeeklyPlan[];
   monthlyReports: MonthlyCloseReport[];
+  syncStatus: SyncStatus;
+  lastSyncedAt: number | null;
   toggleTaskInstance: (taskId: string) => void;
   addRawCapture: (content: string, audioUrl?: string, audioDuration?: number) => void;
   deleteRawCapture: (id: string) => void;
@@ -380,6 +45,7 @@ interface AppContextType {
   saveWeeklyPlan: (plan: Omit<WeeklyPlan, 'id' | 'uid' | 'createdAt'>) => void;
   performFreshStart: () => void;
   saveMonthlyCloseReport: (report: Omit<MonthlyCloseReport, 'id' | 'uid' | 'createdAt'>) => void;
+  clearAllData: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -388,13 +54,51 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskInstances, setTaskInstances] = useState<TaskInstance[]>([]);
   const [rawCaptures, setRawCaptures] = useState<RawCaptureItem[]>([]);
-  const [dailyStats, setDailyStats] = useState<DailyStats[]>(INITIAL_DAILY_STATS);
-  const [goals, setGoals] = useState<Goal[]>(INITIAL_GOALS);
+  const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [reflections, setReflections] = useState<EndOfDayReflection[]>([]);
   const [krCheckins, setKrCheckins] = useState<KrCheckin[]>([]);
   const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyCloseReport[]>([]);
+  
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('synced');
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Monitor browser online/offline status
+  useEffect(() => {
+    const handleOnline = () => setSyncStatus('synced');
+    const handleOffline = () => setSyncStatus('offline');
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setSyncStatus('offline');
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Helper function to safely execute Firestore write operations
+  const saveToFirestore = async (operation: () => Promise<void>) => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setSyncStatus('offline');
+      return;
+    }
+    setSyncStatus('syncing');
+    try {
+      await operation();
+      setSyncStatus('synced');
+      setLastSyncedAt(Date.now());
+    } catch (err) {
+      console.warn('Firestore write error:', err);
+      setSyncStatus('offline');
+    }
+  };
 
   useEffect(() => {
     initAuth();
@@ -411,37 +115,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const savedMonthlyReports = localStorage.getItem('momentum_monthly_reports');
 
       if (savedTasks) setTasks(JSON.parse(savedTasks));
-      else setTasks(INITIAL_TASKS);
-
       if (savedInstances) setTaskInstances(JSON.parse(savedInstances));
-      else setTaskInstances(INITIAL_INSTANCES);
-
       if (savedCaptures) setRawCaptures(JSON.parse(savedCaptures));
-      else setRawCaptures(INITIAL_RAW_CAPTURES);
-
       if (savedStats) setDailyStats(JSON.parse(savedStats));
-
       if (savedGoals) setGoals(JSON.parse(savedGoals));
-      else setGoals(INITIAL_GOALS);
-
       if (savedReflections) setReflections(JSON.parse(savedReflections));
       if (savedCheckins) setKrCheckins(JSON.parse(savedCheckins));
       if (savedWeeklyPlans) setWeeklyPlans(JSON.parse(savedWeeklyPlans));
       if (savedMonthlyReports) setMonthlyReports(JSON.parse(savedMonthlyReports));
-    } catch {
-      setTasks(INITIAL_TASKS);
-      setTaskInstances(INITIAL_INSTANCES);
-      setRawCaptures(INITIAL_RAW_CAPTURES);
-      setGoals(INITIAL_GOALS);
+    } catch (e) {
+      console.error('Failed to load from localStorage', e);
     } finally {
       setIsLoaded(true);
     }
 
-    // Real-time Firestore Listeners
+    // Real-time Firestore Listeners for ALL collections
     const unsubGoals = onSnapshot(collection(db, 'goals'), (snapshot) => {
       if (!snapshot.empty) {
         const items = snapshot.docs.map((d) => d.data() as Goal);
         setGoals(items);
+        setLastSyncedAt(Date.now());
       }
     });
 
@@ -449,6 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!snapshot.empty) {
         const items = snapshot.docs.map((d) => d.data() as Task);
         setTasks(items);
+        setLastSyncedAt(Date.now());
       }
     });
 
@@ -456,6 +150,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!snapshot.empty) {
         const items = snapshot.docs.map((d) => d.data() as TaskInstance);
         setTaskInstances(items);
+        setLastSyncedAt(Date.now());
       }
     });
 
@@ -463,6 +158,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!snapshot.empty) {
         const items = snapshot.docs.map((d) => d.data() as RawCaptureItem);
         setRawCaptures(items);
+        setLastSyncedAt(Date.now());
+      }
+    });
+
+    const unsubReflections = onSnapshot(collection(db, 'reflections'), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map((d) => d.data() as EndOfDayReflection);
+        setReflections(items);
+        setLastSyncedAt(Date.now());
+      }
+    });
+
+    const unsubCheckins = onSnapshot(collection(db, 'krCheckins'), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map((d) => d.data() as KrCheckin);
+        setKrCheckins(items);
+        setLastSyncedAt(Date.now());
+      }
+    });
+
+    const unsubWeeklyPlans = onSnapshot(collection(db, 'weeklyPlans'), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map((d) => d.data() as WeeklyPlan);
+        setWeeklyPlans(items);
+        setLastSyncedAt(Date.now());
+      }
+    });
+
+    const unsubMonthlyReports = onSnapshot(collection(db, 'monthlyReports'), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map((d) => d.data() as MonthlyCloseReport);
+        setMonthlyReports(items);
+        setLastSyncedAt(Date.now());
       }
     });
 
@@ -471,9 +199,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       unsubTasks();
       unsubInstances();
       unsubCaptures();
+      unsubReflections();
+      unsubCheckins();
+      unsubWeeklyPlans();
+      unsubMonthlyReports();
     };
   }, []);
 
+  // Save to localStorage as local backup
   useEffect(() => {
     if (!isLoaded) return;
     try {
@@ -493,41 +226,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const toggleTaskInstance = (taskId: string) => {
     const today = getTodayDateString();
-    setTaskInstances((prev) => {
-      const existing = prev.find((i) => i.taskId === taskId && i.date === today);
-      if (existing) {
-        return prev.map((i) =>
-          i.id === existing.id
-            ? {
-                ...i,
-                status: i.status === 'completed' ? 'pending' : 'completed',
-                completedAt: i.status === 'completed' ? undefined : Date.now(),
-              }
-            : i
-        );
-      } else {
-        const newInstance: TaskInstance = {
-          id: `inst-${Date.now()}`,
-          uid: 'user-1',
-          taskId,
-          date: today,
-          status: 'completed',
-          completedAt: Date.now(),
-        };
-        return [...prev, newInstance];
-      }
-    });
+    let updatedInstance: TaskInstance;
 
-    // Update streak if it's a habit
+    const existing = taskInstances.find((i) => i.taskId === taskId && i.date === today);
+    if (existing) {
+      updatedInstance = {
+        ...existing,
+        status: existing.status === 'completed' ? 'pending' : 'completed',
+        completedAt: existing.status === 'completed' ? undefined : Date.now(),
+      };
+      setTaskInstances((prev) => prev.map((i) => (i.id === existing.id ? updatedInstance : i)));
+    } else {
+      updatedInstance = {
+        id: `inst-${Date.now()}`,
+        uid: 'user-1',
+        taskId,
+        date: today,
+        status: 'completed',
+        completedAt: Date.now(),
+      };
+      setTaskInstances((prev) => [...prev, updatedInstance]);
+    }
+
+    // Save instance to Firestore
+    saveToFirestore(() => setDoc(doc(db, 'taskInstances', updatedInstance.id), updatedInstance));
+
+    // Update habit streak in tasks if applicable
     setTasks((prevTasks) =>
       prevTasks.map((t) => {
         if (t.id === taskId && t.isHabit) {
-          const instance = taskInstances.find((i) => i.taskId === taskId && i.date === today);
-          const wasCompleted = instance?.status === 'completed';
+          const wasCompleted = existing?.status === 'completed';
           const newStreak = wasCompleted
             ? Math.max(0, (t.streakCount || 1) - 1)
             : (t.streakCount || 0) + 1;
-          return { ...t, streakCount: newStreak };
+          const updatedTask = { ...t, streakCount: newStreak };
+          saveToFirestore(() => setDoc(doc(db, 'tasks', taskId), updatedTask, { merge: true }));
+          return updatedTask;
         }
         return t;
       })
@@ -554,12 +288,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
     };
     setRawCaptures((prev) => [newItem, ...prev]);
-    setDoc(doc(db, 'rawCaptures', newItem.id), newItem).catch((err) => console.warn('Firestore set error:', err));
+    saveToFirestore(() => setDoc(doc(db, 'rawCaptures', newItem.id), newItem));
   };
 
   const deleteRawCapture = (id: string) => {
     setRawCaptures((prev) => prev.filter((item) => item.id !== id));
-    deleteDoc(doc(db, 'rawCaptures', id)).catch((err) => console.warn('Firestore delete error:', err));
+    saveToFirestore(() => deleteDoc(doc(db, 'rawCaptures', id)));
   };
 
   const triageApprove = (
@@ -588,9 +322,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setTasks((prev) => [newTask, ...prev]);
-    setDoc(doc(db, 'tasks', newTask.id), newTask).catch((err) => console.warn('Firestore set error:', err));
+    saveToFirestore(() => setDoc(doc(db, 'tasks', newTask.id), newTask));
 
-    // Create instance for selected date (today or tomorrow)
     const targetDateStr =
       targetDate === 'tomorrow'
         ? getTomorrowDateString()
@@ -607,14 +340,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setTaskInstances((prev) => [...prev, newInstance]);
-    setDoc(doc(db, 'taskInstances', newInstance.id), newInstance).catch((err) => console.warn('Firestore set error:', err));
+    saveToFirestore(() => setDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
 
-    // Mark capture as triaged
     setRawCaptures((prev) =>
       prev.map((c) => {
         if (c.id === rawId) {
           const updated = { ...c, status: 'triaged' as const };
-          setDoc(doc(db, 'rawCaptures', rawId), updated, { merge: true }).catch((err) => console.warn('Firestore update error:', err));
+          saveToFirestore(() => setDoc(doc(db, 'rawCaptures', rawId), updated, { merge: true }));
           return updated;
         }
         return c;
@@ -624,7 +356,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const triageReject = (rawId: string) => {
     setRawCaptures((prev) =>
-      prev.map((c) => (c.id === rawId ? { ...c, status: 'discarded' } : c))
+      prev.map((c) => {
+        if (c.id === rawId) {
+          const updated = { ...c, status: 'discarded' as const };
+          saveToFirestore(() => setDoc(doc(db, 'rawCaptures', rawId), updated, { merge: true }));
+          return updated;
+        }
+        return c;
+      })
     );
   };
 
@@ -635,6 +374,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setReflections((prev) => [newRef, ...prev]);
+    saveToFirestore(() => setDoc(doc(db, 'reflections', newRef.id), newRef));
   };
 
   const updateTask = (taskId: string, updates: Partial<Task>) => {
@@ -642,7 +382,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((t) => {
         if (t.id === taskId) {
           const updated = { ...t, ...updates, updatedAt: Date.now() };
-          setDoc(doc(db, 'tasks', taskId), updated, { merge: true }).catch((err) => console.warn('Firestore update error:', err));
+          saveToFirestore(() => setDoc(doc(db, 'tasks', taskId), updated, { merge: true }));
           return updated;
         }
         return t;
@@ -658,7 +398,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((t) => {
         if (t.id === taskId) {
           const updated = { ...t, postponeCount: (t.postponeCount || 0) + 1, updatedAt: Date.now() };
-          setDoc(doc(db, 'tasks', taskId), updated, { merge: true }).catch((err) => console.warn('Firestore update error:', err));
+          saveToFirestore(() => setDoc(doc(db, 'tasks', taskId), updated, { merge: true }));
           return updated;
         }
         return t;
@@ -678,7 +418,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return [...filtered, newInstance];
     });
 
-    setDoc(doc(db, 'taskInstances', newInstance.id), newInstance).catch((err) => console.warn('Firestore set error:', err));
+    saveToFirestore(() => setDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
   };
 
   const addGoal = (goalData: Omit<Goal, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => {
@@ -692,7 +432,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lastPointsAssignedAt: Date.now(),
     };
     setGoals((prev) => [...prev, newGoal]);
-    setDoc(doc(db, 'goals', newGoal.id), newGoal).catch((err) => console.warn('Firestore set error:', err));
+    saveToFirestore(() => setDoc(doc(db, 'goals', newGoal.id), newGoal));
     return newGoal;
   };
 
@@ -701,7 +441,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((g) => {
         if (g.id === goalId) {
           const updated = { ...g, ...updates, updatedAt: Date.now() };
-          setDoc(doc(db, 'goals', goalId), updated, { merge: true }).catch((err) => console.warn('Firestore update error:', err));
+          saveToFirestore(() => setDoc(doc(db, 'goals', goalId), updated, { merge: true }));
           return updated;
         }
         return g;
@@ -722,7 +462,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setGoals((prevGoals) => prevGoals.filter((g) => !idsToDeleteSet.has(g.id)));
 
     idsToDelete.forEach((id) => {
-      deleteDoc(doc(db, 'goals', id)).catch((err) => console.warn('Firestore delete error:', err));
+      saveToFirestore(() => deleteDoc(doc(db, 'goals', id)));
     });
 
     setTasks((prevTasks) =>
@@ -742,7 +482,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setKrCheckins((prev) => [newCheckin, ...prev]);
-    // Also update goal's current KR metric
+    saveToFirestore(() => setDoc(doc(db, 'krCheckins', newCheckin.id), newCheckin));
     updateGoal(goalId, { krCurrent: value, updatedAt: Date.now() });
   };
 
@@ -754,27 +494,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setWeeklyPlans((prev) => [newPlan, ...prev]);
+    saveToFirestore(() => setDoc(doc(db, 'weeklyPlans', newPlan.id), newPlan));
 
-    // Update goals effort target points from allocation
     planData.goalAllocations.forEach((alloc) => {
-      setGoals((prev) =>
-        prev.map((g) => {
-          if (g.id === alloc.goalId) {
-            return {
-              ...g,
-              effortTargetPoints: (g.effortTargetPoints || 0) + alloc.allocatedPoints,
-              lastPointsAssignedAt: Date.now(),
-              updatedAt: Date.now(),
-            };
-          }
-          return g;
-        })
-      );
+      const goal = goals.find((g) => g.id === alloc.goalId);
+      if (goal) {
+        updateGoal(alloc.goalId, {
+          effortTargetPoints: (goal.effortTargetPoints || 0) + alloc.allocatedPoints,
+          lastPointsAssignedAt: Date.now(),
+        });
+      }
     });
   };
 
   const performFreshStart = () => {
-    // Clear pending task instances for today/past to give a fresh start
     setTaskInstances((prev) => prev.filter((inst) => inst.status === 'completed'));
   };
 
@@ -786,6 +519,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setMonthlyReports((prev) => [newReport, ...prev]);
+    saveToFirestore(() => setDoc(doc(db, 'monthlyReports', newReport.id), newReport));
+  };
+
+  const clearAllData = () => {
+    setTasks([]);
+    setTaskInstances([]);
+    setRawCaptures([]);
+    setDailyStats([]);
+    setGoals([]);
+    setReflections([]);
+    setKrCheckins([]);
+    setWeeklyPlans([]);
+    setMonthlyReports([]);
+
+    try {
+      localStorage.removeItem('momentum_tasks');
+      localStorage.removeItem('momentum_instances');
+      localStorage.removeItem('momentum_captures');
+      localStorage.removeItem('momentum_stats');
+      localStorage.removeItem('momentum_goals');
+      localStorage.removeItem('momentum_reflections');
+      localStorage.removeItem('momentum_kr_checkins');
+      localStorage.removeItem('momentum_weekly_plans');
+      localStorage.removeItem('momentum_monthly_reports');
+    } catch (e) {
+      console.error('Failed to clear localStorage', e);
+    }
   };
 
   return (
@@ -800,6 +560,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         krCheckins,
         weeklyPlans,
         monthlyReports,
+        syncStatus,
+        lastSyncedAt,
         toggleTaskInstance,
         addRawCapture,
         deleteRawCapture,
@@ -815,6 +577,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         saveWeeklyPlan,
         performFreshStart,
         saveMonthlyCloseReport,
+        clearAllData,
       }}
     >
       {children}
