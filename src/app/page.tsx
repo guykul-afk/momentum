@@ -1,10 +1,6 @@
-import TodayPage from './(tabs)/today/page';
-import TabsLayout from './(tabs)/layout';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <TabsLayout>
-      <TodayPage />
-    </TabsLayout>
-  );
+  redirect('/today');
 }
+

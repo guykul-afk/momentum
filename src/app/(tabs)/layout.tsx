@@ -52,6 +52,13 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
     },
   ];
 
+  const isItemActive = (href: string) => {
+    if (pathname === href) return true;
+    if (href === '/today' && pathname === '/') return true;
+    if (href !== '/' && pathname.startsWith(href)) return true;
+    return false;
+  };
+
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-800 flex justify-center">
       {/* Mobile-width container with top safe-area padding and bottom navigation padding */}
@@ -79,7 +86,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
           </div>
           <div className="flex items-center gap-1.5 w-full justify-between overflow-x-auto no-scrollbar pb-0.5">
             {navItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+              const isActive = isItemActive(item.href);
               return (
                 <Link
                   key={item.href}
@@ -110,7 +117,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
         {/* Fixed Thumb-Accessible Bottom Navigation Bar */}
         <nav className="app-bottom-nav px-2 flex justify-around items-center">
           {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const isActive = isItemActive(item.href);
             const Icon = item.icon;
 
             return (
