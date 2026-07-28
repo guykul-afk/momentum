@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { MonthlyCloseReport, KrCheckin } from '@/types/models';
-import { isGoalStarved } from '@/components/goals/StarveBadge';
 
 export default function MonthlyCloseRitualPage() {
   const { goals, addKrCheckin, saveMonthlyCloseReport } = useAppStore();
@@ -55,29 +54,23 @@ export default function MonthlyCloseRitualPage() {
     setIsGeneratingAi(true);
 
     setTimeout(() => {
-      const starved = monthlyAndAnnualGoals
-        .filter((g) => isGoalStarved(g.lastPointsAssignedAt))
-        .map((g) => g.title);
-
       const highRoi = monthlyAndAnnualGoals
         .filter((g) => {
-          const effortTarget = g.effortTargetPoints || 1;
           const krTarget = g.krTarget || 1;
-          const effortPct = (g.effortCompletedPoints || 0) / effortTarget;
           const krPct = (krValues[g.id] || 0) / krTarget;
-          return krPct >= 0.6 && effortPct >= 0.5;
+          return krPct >= 0.5;
         })
         .map((g) => g.title);
 
       const report: MonthlyCloseReport['aiAnalysis'] = {
-        summary: 'ניתוח סיכום חודשי: התאמה גבוהה (82%) בין משאבי מאמץ שהושקעו לבין השגת מדדי ה-KR.',
+        summary: 'ניתוח סיכום חודשי: מעקב חודשי פעיל והתקדמות במדדי היעדים וה-KR.',
         highRoiGoals: highRoi.length > 0 ? highRoi : ['פיתוח 4 ריטואלים עיקריים ומערכת יעדים'],
-        starvedGoals: starved.length > 0 ? starved : ['כתיבת ספר מקצועי בנושא ארכיטקטורת תוכנה'],
-        effortOutcomeCorrelation: 0.82,
+        starvedGoals: [],
+        effortOutcomeCorrelation: 0.85,
         strategicAdvice: [
-          'הסט 20% מנקודות המאמץ של החודש הבא מיעדי תפעול ליעדים רעבים.',
-          'יעדי הבריאות והכושר הראו ROI גבוה מאוד - מומלץ לשמר את התדירות השבועית.',
-          'הקפד על רישום בדיקות KR שבועי כדי למנוע סטיות פער > 30%.',
+          'המשך להתמיד בעדכון בדיקות KR שבועי וחודשי.',
+          'יעדי הבריאות והכושר הראו התקדמות יציבה - מומלץ לשמר את התדירות השבועית.',
+          'וודא קישור כל משימה שבועית ליעד חודשי ברור.',
         ],
       };
 

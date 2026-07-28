@@ -25,7 +25,7 @@ export default function WeeklyPlanningRitualPage() {
   const [allocations, setAllocations] = useState<Record<string, number>>(() => {
     const initialMap: Record<string, number> = {};
     activeGoals.forEach((g) => {
-      initialMap[g.id] = g.effortTargetPoints || 10;
+      initialMap[g.id] = 10;
     });
     return initialMap;
   });
@@ -52,12 +52,12 @@ export default function WeeklyPlanningRitualPage() {
     setTimeout(() => {
       const isHighOverload = totalAllocatedPoints > capacityLimit;
       const report = {
-        summary: `ניתוח תכנון שבועי: הוקצו ${totalAllocatedPoints} נקודות מאמץ מתוך קיבולת מומלצת של ${capacityLimit} נקודות (${overloadPct}% ניצול).`,
+        summary: `ניתוח תכנון שבועי: הוגדרו מכסות עבור ${totalAllocatedPoints} משימות מתוכננות מתוך קיבולת של ${capacityLimit} (${overloadPct}% ניצול).`,
         recommendations: [
           isHighOverload
-            ? 'מומלץ להפחית 10-15% מהנקודות ביעדי תפעול כדי למנוע שחיקה באמצע השבוע.'
+            ? 'מומלץ להפחית 10-15% מעומס המשימות ביעדי תפעול כדי למנוע שחיקה באמצע השבוע.'
             : 'חלוקת העומס מאוזנת היטב בין יעדי עבודה לבריאות.',
-          'מקד את 3 הימים הראשונים של השבוע ביעד האסטרטגי בעל המשקל הגבוה ביותר.',
+          'מקד את 3 הימים הראשונים של השבוע ביעד האסטרטגי המרכזי.',
           'וודא הגדרת כוונת ביצוע (When & Where) לכל משימה יומית שנגזרת מהיעדים.',
         ],
         riskAssessment: isHighOverload

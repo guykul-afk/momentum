@@ -17,7 +17,6 @@ import {
 import { Goal } from '@/types/models';
 import { useAppStore } from '@/lib/store';
 import { EffortVsKrRing } from './EffortVsKrRing';
-import { StarveBadge, isGoalStarved } from './StarveBadge';
 import { getAnnualRemainingInfo, getMonthlyRemainingInfo } from '@/lib/goalUtils';
 
 interface GoalTreeItemProps {
@@ -47,7 +46,7 @@ export function GoalTreeItem({
   const [checkinValue, setCheckinValue] = useState<number>(goal.krCurrent || 0);
 
   const hasChildren = childGoals.length > 0;
-  const starved = isGoalStarved(goal.lastPointsAssignedAt);
+  const starved = false;
   const isAnnual = goal.timeframe === 'annual';
 
   // Task linking counters for monthly goals
@@ -122,8 +121,6 @@ export function GoalTreeItem({
                 <span className="px-2 py-0.5 text-[10px] font-medium rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                   {categoryLabels}
                 </span>
-
-                <StarveBadge lastPointsAssignedAt={goal.lastPointsAssignedAt} />
 
                 {/* Remaining Time Badge */}
                 {isAnnual && annualInfo && (
@@ -229,8 +226,6 @@ export function GoalTreeItem({
         {/* Visual Effort Ring vs KR Bar */}
         <div className="mt-3 pt-3 border-t border-slate-100">
           <EffortVsKrRing
-            effortCompleted={goal.effortCompletedPoints || 0}
-            effortTarget={goal.effortTargetPoints || 20}
             krCurrent={goal.krCurrent || 0}
             krTarget={goal.krTarget || 100}
             krUnit={goal.krUnit || '%'}

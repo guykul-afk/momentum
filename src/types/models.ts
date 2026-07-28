@@ -12,9 +12,6 @@ export interface Goal {
   krTarget?: number;
   krCurrent?: number;
   krUnit?: string;
-  effortTargetPoints?: number;
-  effortCompletedPoints?: number;
-  lastPointsAssignedAt?: number; // timestamp for starve detection (2 weeks = 14 days)
   category?: 'work' | 'personal' | 'health' | 'maintenance';
   createdAt: number;
   updatedAt: number;

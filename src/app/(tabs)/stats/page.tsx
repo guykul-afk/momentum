@@ -3,16 +3,14 @@
 import React, { useState } from 'react';
 import {
   TrendingUp,
-  BarChart3,
   PieChart as PieIcon,
   Activity,
   Target,
-  Award,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { computeRollingAdherence, computeFocusRatio } from '@/lib/metrics';
 import { AdherenceLineChart, AdherenceDataPoint } from '@/components/charts/AdherenceLineChart';
-import { EffortVsKrBarChart, EffortVsKrDataPoint } from '@/components/charts/EffortVsKrBarChart';
 import { FocusRatioPieChart, FocusRatioCategoryData } from '@/components/charts/FocusRatioPieChart';
 
 export default function StatsPage() {
@@ -53,23 +51,8 @@ export default function StatsPage() {
     }
   }
 
-  // 2. Compute Effort vs KR Bar Chart Data from Goals
+  // 2. Active goals count
   const activeGoals = goals.filter((g) => g.status === 'active');
-  const barChartData: EffortVsKrDataPoint[] = activeGoals.map((g) => {
-    const effortTarget = g.effortTargetPoints || 1;
-    const krTarget = g.krTarget || 1;
-    const effortPct = Math.min(100, Math.round(((g.effortCompletedPoints || 0) / effortTarget) * 100));
-    const krPct = Math.min(100, Math.round(((g.krCurrent || 0) / krTarget) * 100));
-
-    // Short title for graph label
-    const shortTitle = g.title.length > 14 ? g.title.slice(0, 14) + '...' : g.title;
-
-    return {
-      goalTitle: shortTitle,
-      effortProgressPct: effortPct,
-      krProgressPct: krPct,
-    };
-  });
 
   // 3. Compute Focus Ratio Pie Chart Data
   const completedInstances = taskInstances.filter((i) => i.status === 'completed');
@@ -97,7 +80,6 @@ export default function StatsPage() {
   ];
 
   const overallAdherencePct = Math.round(computeRollingAdherence(dailyStats, timeframeDays) * 100);
-  const totalEffortPoints = goals.reduce((acc, g) => acc + (g.effortCompletedPoints || 0), 0);
 
   return (
     <div className="space-y-5 pb-8 animate-in fade-in duration-200">
@@ -155,11 +137,11 @@ export default function StatsPage() {
 
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs">
           <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[11px] font-semibold text-slate-600">נקודות מאמץ שבוצעו</span>
-            <Award className="w-4 h-4 text-indigo-500" />
+            <span className="text-[11px] font-semibold text-slate-600">משימות שהושלמו</span>
+            <CheckCircle2 className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="text-2xl font-black text-slate-800">{totalEffortPoints}</div>
-          <div className="text-[10px] text-indigo-600 font-medium">נקודות מאמץ שנצברו</div>
+          <div className="text-2xl font-black text-slate-800">{completedInstances.length}</div>
+          <div className="text-[10px] text-indigo-600 font-medium">משימות שהושלמו בסך הכל</div>
         </div>
 
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs">
@@ -189,23 +171,6 @@ export default function StatsPage() {
         </div>
 
         <AdherenceLineChart data={lineChartData} timeframeDays={timeframeDays} />
-      </div>
-
-      {/* Chart 2: Effort vs Key Result Bar Chart */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-orange-50 text-[#F97316]">
-            <BarChart3 className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">השוואת מאמץ מול תוצאות (KR)</h2>
-            <p className="text-[11px] text-slate-400">
-              השוואה ויזואלית בין אחוז המאמץ שהושקע לבין התקדמות מדד ה-KR
-            </p>
-          </div>
-        </div>
-
-        <EffortVsKrBarChart data={barChartData} />
       </div>
 
       {/* Chart 3: Focus Ratio Pie Chart */}

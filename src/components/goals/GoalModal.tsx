@@ -36,9 +36,6 @@ export function GoalModal({
   const [krTarget, setKrTarget] = useState<number>(initialGoal?.krTarget || 100);
   const [krCurrent, setKrCurrent] = useState<number>(initialGoal?.krCurrent || 0);
   const [krUnit, setKrUnit] = useState(initialGoal?.krUnit || '%');
-  const [effortTargetPoints, setEffortTargetPoints] = useState<number>(
-    initialGoal?.effortTargetPoints || 20
-  );
   const [category, setCategory] = useState<'work' | 'personal' | 'health' | 'maintenance'>(
     initialGoal?.category || 'work'
   );
@@ -53,7 +50,6 @@ export function GoalModal({
       setKrTarget(initialGoal?.krTarget || 100);
       setKrCurrent(initialGoal?.krCurrent || 0);
       setKrUnit(initialGoal?.krUnit || '%');
-      setEffortTargetPoints(initialGoal?.effortTargetPoints || 20);
       setCategory(initialGoal?.category || 'work');
     }
   }, [isOpen, initialGoal, defaultTimeframe, defaultParentId]);
@@ -86,11 +82,8 @@ export function GoalModal({
       krTarget: Number(krTarget) || 100,
       krCurrent: Number(krCurrent) || 0,
       krUnit: krUnit.trim() || '%',
-      effortTargetPoints: Number(effortTargetPoints) || 20,
-      effortCompletedPoints: initialGoal?.effortCompletedPoints || 0,
       category,
       status: initialGoal?.status || 'active',
-      lastPointsAssignedAt: initialGoal?.lastPointsAssignedAt || Date.now(),
     });
 
     onClose();
@@ -278,18 +271,6 @@ export function GoalModal({
                   className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-800"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                יעד נקודות מאמץ מתוכנן (Effort Points)
-              </label>
-              <input
-                type="number"
-                value={effortTargetPoints}
-                onChange={(e) => setEffortTargetPoints(Number(e.target.value))}
-                className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800"
-              />
             </div>
           </div>
 

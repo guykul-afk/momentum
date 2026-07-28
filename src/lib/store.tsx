@@ -589,7 +589,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       status: goalData.status || 'active',
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      lastPointsAssignedAt: Date.now(),
     };
     setGoals((prev) => [...prev, newGoal]);
     saveToFirestore(() => setDoc(doc(db, 'goals', newGoal.id), newGoal));
@@ -706,16 +705,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     setWeeklyPlans((prev) => [newPlan, ...prev]);
     saveToFirestore(() => setDoc(doc(db, 'weeklyPlans', newPlan.id), newPlan));
-
-    planData.goalAllocations.forEach((alloc) => {
-      const goal = goals.find((g) => g.id === alloc.goalId);
-      if (goal) {
-        updateGoal(alloc.goalId, {
-          effortTargetPoints: (goal.effortTargetPoints || 0) + alloc.allocatedPoints,
-          lastPointsAssignedAt: Date.now(),
-        });
-      }
-    });
   };
 
   const performFreshStart = () => {

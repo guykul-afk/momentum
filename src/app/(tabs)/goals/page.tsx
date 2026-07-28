@@ -5,18 +5,16 @@ import Link from 'next/link';
 import {
   Target,
   Plus,
-  Flame,
-  AlertTriangle,
   Layers,
   Sparkles,
   CalendarCheck,
   Filter,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Goal } from '@/types/models';
 import { GoalTreeItem } from '@/components/goals/GoalTreeItem';
 import { GoalModal } from '@/components/goals/GoalModal';
-import { isGoalStarved } from '@/components/goals/StarveBadge';
 
 export default function GoalsPage() {
   const { goals, addGoal, updateGoal, deleteGoal, addKrCheckin } = useAppStore();
@@ -49,14 +47,8 @@ export default function GoalsPage() {
   });
 
   // Statistics calculation
-  const starvedCount = activeGoals.filter((g) => isGoalStarved(g.lastPointsAssignedAt)).length;
-  const gapAlertCount = activeGoals.filter((g) => {
-    const effortTarget = g.effortTargetPoints || 1;
-    const krTarget = g.krTarget || 1;
-    const effortPct = Math.min(100, Math.round(((g.effortCompletedPoints || 0) / effortTarget) * 100));
-    const krPct = Math.min(100, Math.round(((g.krCurrent || 0) / krTarget) * 100));
-    return Math.abs(effortPct - krPct) > 30;
-  }).length;
+  const annualGoalsCount = activeGoals.filter((g) => g.timeframe === 'annual').length;
+  const monthlyGoalsCount = activeGoals.filter((g) => g.timeframe === 'monthly').length;
 
   const handleOpenAddModal = (parentId?: string, timeframe: 'annual' | 'monthly' = 'annual') => {
     setEditingGoal(undefined);
@@ -107,7 +99,7 @@ export default function GoalsPage() {
             <div>
               <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">עץ יעדים ו-KRs</h1>
               <p className="text-xs text-slate-500 font-medium">
-                היררכיית יעדים רב-שנתית, מדדי מאמץ והתראות מומנטום
+                היררכיית יעדים רב-שנתית ומעקב מדדי תוצאה (KRs)
               </p>
             </div>
           </div>
@@ -135,7 +127,7 @@ export default function GoalsPage() {
           </div>
           <div>
             <div className="text-xs font-extrabold text-slate-800">תכנון שבועי</div>
-            <div className="text-[10px] text-slate-500">הקצאת נקודות מאמץ</div>
+            <div className="text-[10px] text-slate-500">הגדרת סדרי עדיפויות</div>
           </div>
         </Link>
 
@@ -164,22 +156,22 @@ export default function GoalsPage() {
           <div className="text-[10px] text-slate-400">פעילים במערכת</div>
         </div>
 
-        <div className="bg-orange-50/70 p-3 rounded-2xl border border-orange-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-orange-400 mb-1">
-            <span className="text-[11px] font-semibold text-orange-800">פער מאמץ (&gt;30%)</span>
-            <Flame className="w-4 h-4 text-[#F97316]" />
+        <div className="bg-cyan-50/70 p-3 rounded-2xl border border-cyan-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-cyan-700 mb-1">
+            <span className="text-[11px] font-semibold text-cyan-800">יעדים שנתיים</span>
+            <Target className="w-4 h-4 text-cyan-600" />
           </div>
-          <div className="text-xl font-black text-[#F97316]">{gapAlertCount}</div>
-          <div className="text-[10px] text-orange-600/80 font-medium">התראת Coral highlight</div>
+          <div className="text-xl font-black text-cyan-900">{annualGoalsCount}</div>
+          <div className="text-[10px] text-cyan-700/80 font-medium">עד סוף השנה הקלנדרית</div>
         </div>
 
-        <div className="bg-amber-50/70 p-3 rounded-2xl border border-amber-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-amber-400 mb-1">
-            <span className="text-[11px] font-semibold text-amber-800">יעדים רעבים</span>
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
+        <div className="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-indigo-700 mb-1">
+            <span className="text-[11px] font-semibold text-indigo-800">יעדים חודשיים</span>
+            <CalendarCheck className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-xl font-black text-amber-700">{starvedCount}</div>
-          <div className="text-[10px] text-amber-600/80 font-medium">ללא נקודות 14+ יום</div>
+          <div className="text-xl font-black text-indigo-900">{monthlyGoalsCount}</div>
+          <div className="text-[10px] text-indigo-700/80 font-medium">יעדים חודשיים מקושרים</div>
         </div>
       </div>
 

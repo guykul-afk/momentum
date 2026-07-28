@@ -57,10 +57,7 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
       krTarget: Number(krTarget) || 100,
       krCurrent: 0,
       krUnit: krUnit.trim() || '%',
-      effortTargetPoints: 20,
-      effortCompletedPoints: 0,
       status: 'active',
-      lastPointsAssignedAt: Date.now(),
     });
 
     setGoalTitle('');
