@@ -22,11 +22,11 @@ export default function GoalsPage() {
   const { goals, addGoal, updateGoal, deleteGoal, addKrCheckin } = useAppStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | undefined>(undefined);
-  const [modalDefaultTimeframe, setModalDefaultTimeframe] = useState<'annual' | 'monthly' | 'weekly'>('annual');
+  const [modalDefaultTimeframe, setModalDefaultTimeframe] = useState<'annual' | 'monthly'>('annual');
   const [modalDefaultParentId, setModalDefaultParentId] = useState<string | undefined>(undefined);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
 
-  const [timeframeFilter, setTimeframeFilter] = useState<'all' | 'annual' | 'monthly' | 'weekly'>('all');
+  const [timeframeFilter, setTimeframeFilter] = useState<'all' | 'annual' | 'monthly'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Filter goals based on selection
@@ -38,10 +38,15 @@ export default function GoalsPage() {
     return true;
   });
 
-  // Root goals for the tree display (Annual goals or orphan goals without parents)
-  const rootGoals = filteredGoals.filter(
-    (g) => !g.parentId || !goals.some((parent) => parent.id === g.parentId)
-  );
+  // Root goals for the tree display:
+  // If timeframeFilter === 'monthly', show all filtered monthly goals.
+  // If timeframeFilter === 'annual', show all filtered annual goals.
+  // If timeframeFilter === 'all', show Annual goals or orphan goals without parents.
+  const rootGoals = filteredGoals.filter((g) => {
+    if (timeframeFilter === 'monthly') return true;
+    if (timeframeFilter === 'annual') return g.timeframe === 'annual';
+    return !g.parentId || !goals.some((parent) => parent.id === g.parentId);
+  });
 
   // Statistics calculation
   const starvedCount = activeGoals.filter((g) => isGoalStarved(g.lastPointsAssignedAt)).length;
@@ -53,7 +58,7 @@ export default function GoalsPage() {
     return Math.abs(effortPct - krPct) > 30;
   }).length;
 
-  const handleOpenAddModal = (parentId?: string, timeframe: 'annual' | 'monthly' | 'weekly' = 'annual') => {
+  const handleOpenAddModal = (parentId?: string, timeframe: 'annual' | 'monthly' = 'annual') => {
     setEditingGoal(undefined);
     setModalDefaultTimeframe(timeframe);
     setModalDefaultParentId(parentId);
@@ -186,7 +191,6 @@ export default function GoalsPage() {
               { id: 'all', label: 'הכל' },
               { id: 'annual', label: 'שנתי' },
               { id: 'monthly', label: 'חודשי' },
-              { id: 'weekly', label: 'שבועי' },
             ] as const
           ).map((t) => (
             <button
@@ -225,7 +229,7 @@ export default function GoalsPage() {
           <Target className="w-10 h-10 text-slate-300 mx-auto mb-2" />
           <h3 className="text-sm font-bold text-slate-700">לא נמצאו יעדים במערכת</h3>
           <p className="text-xs text-slate-400 mt-1 mb-4">
-            הגדר את היעדים השנתיים, החודשיים והשבועיים שלך כדי להתחיל למדוד מומנטום
+            הגדר את היעדים השנתיים והחודשיים שלך כדי להתחיל למדוד מומנטום
           </p>
           <button
             onClick={() => handleOpenAddModal(undefined, 'annual')}
@@ -257,6 +261,7 @@ export default function GoalsPage() {
 
       {/* Goal Create / Edit Modal */}
       <GoalModal
+        key={editingGoal ? editingGoal.id : `new-${modalDefaultTimeframe}-${modalDefaultParentId || 'root'}`}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveGoal}

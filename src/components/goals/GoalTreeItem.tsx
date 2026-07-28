@@ -8,16 +8,23 @@ import {
   Edit2,
   Trash2,
   CheckSquare,
+  Clock,
+  Calendar,
+  FolderKanban,
+  ListTodo,
+  CalendarDays,
 } from 'lucide-react';
 import { Goal } from '@/types/models';
+import { useAppStore } from '@/lib/store';
 import { EffortVsKrRing } from './EffortVsKrRing';
 import { StarveBadge, isGoalStarved } from './StarveBadge';
+import { getAnnualRemainingInfo, getMonthlyRemainingInfo } from '@/lib/goalUtils';
 
 interface GoalTreeItemProps {
   goal: Goal;
   childGoals: Goal[];
   allGoals: Goal[];
-  onAddSubGoal: (parentId: string, timeframe: 'monthly' | 'weekly') => void;
+  onAddSubGoal: (parentId: string, timeframe: 'monthly') => void;
   onEditGoal: (goal: Goal) => void;
   onDeleteGoal?: (goal: Goal) => void;
   onCheckinKr: (goalId: string, currentKr: number) => void;
@@ -34,12 +41,21 @@ export function GoalTreeItem({
   onCheckinKr,
   level = 0,
 }: GoalTreeItemProps) {
+  const { tasks, taskInstances, postponeMonthlyGoal, postponeAnnualGoal } = useAppStore();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
   const [checkinValue, setCheckinValue] = useState<number>(goal.krCurrent || 0);
 
   const hasChildren = childGoals.length > 0;
   const starved = isGoalStarved(goal.lastPointsAssignedAt);
+  const isAnnual = goal.timeframe === 'annual';
+
+  // Task linking counters for monthly goals
+  const linkedTasks = tasks.filter((t) => t.goalId === goal.id);
+  const completedTaskIds = new Set(
+    taskInstances.filter((inst) => inst.status === 'completed').map((inst) => inst.taskId)
+  );
+  const completedTasksCount = linkedTasks.filter((t) => completedTaskIds.has(t.id)).length;
 
   const levelStyles = {
     0: 'bg-white border-slate-200/90 shadow-sm hover:shadow-md border-r-4 border-r-cyan-500',
@@ -50,7 +66,6 @@ export function GoalTreeItem({
   const timeframeLabels = {
     annual: { label: 'שנתי', bg: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
     monthly: { label: 'חודשי', bg: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-    weekly: { label: 'שבועי', bg: 'bg-teal-100 text-teal-800 border-teal-200' },
   }[goal.timeframe || 'monthly'];
 
   const categoryLabels = {
@@ -60,15 +75,13 @@ export function GoalTreeItem({
     maintenance: 'תפעול',
   }[goal.category || 'work'];
 
+  const annualInfo = isAnnual ? getAnnualRemainingInfo(goal) : null;
+  const monthlyInfo = !isAnnual ? getMonthlyRemainingInfo(goal) : null;
+
   const handleCheckinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onCheckinKr(goal.id, Number(checkinValue));
     setIsCheckinOpen(false);
-  };
-
-  const getSubGoalTimeframe = (): 'monthly' | 'weekly' => {
-    if (goal.timeframe === 'annual') return 'monthly';
-    return 'weekly';
   };
 
   return (
@@ -98,7 +111,7 @@ export function GoalTreeItem({
               <div className="w-6 h-6 shrink-0" />
             )}
 
-            <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex-1 min-w-0 space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${timeframeLabels.bg}`}
@@ -111,6 +124,21 @@ export function GoalTreeItem({
                 </span>
 
                 <StarveBadge lastPointsAssignedAt={goal.lastPointsAssignedAt} />
+
+                {/* Remaining Time Badge */}
+                {isAnnual && annualInfo && (
+                  <span className="flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-800 border border-amber-200/80">
+                    <Clock className="w-3 h-3 text-amber-600" />
+                    <span>{annualInfo.text}</span>
+                  </span>
+                )}
+
+                {!isAnnual && monthlyInfo && (
+                  <span className="flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200/80">
+                    <Clock className="w-3 h-3 text-indigo-600" />
+                    <span>{monthlyInfo.text}</span>
+                  </span>
+                )}
               </div>
 
               <h3 className="font-bold text-slate-800 text-sm sm:text-base leading-snug break-words">
@@ -120,39 +148,81 @@ export function GoalTreeItem({
               {goal.description && (
                 <p className="text-xs text-slate-500 line-clamp-2">{goal.description}</p>
               )}
+
+              {/* Hierarchy counters */}
+              <div className="flex items-center gap-3 pt-1 text-[11px] font-semibold">
+                {isAnnual ? (
+                  <div className="flex items-center gap-1 text-cyan-700 bg-cyan-50/80 px-2 py-0.5 rounded-lg border border-cyan-100">
+                    <FolderKanban className="w-3.5 h-3.5" />
+                    <span>
+                      {childGoals.length} יעדים חודשיים מקושרים
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded-lg border border-indigo-100">
+                    <ListTodo className="w-3.5 h-3.5" />
+                    <span>
+                      {linkedTasks.length} משימות מקושרות ({completedTasksCount} הושלמו)
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => onEditGoal(goal)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              title="ערוך יעד"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-
-            {onDeleteGoal && (
+          {/* Quick Actions & Postpone */}
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 shrink-0">
+            {/* Postpone button - available anytime! */}
+            {isAnnual ? (
               <button
-                onClick={() => onDeleteGoal(goal)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                title="מחק יעד"
+                onClick={() => postponeAnnualGoal(goal.id)}
+                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-all shadow-2xs"
+                title="דחה/הארך לשנה הקלנדרית הבאה"
               >
-                <Trash2 className="w-4 h-4" />
+                <CalendarDays className="w-3.5 h-3.5 text-amber-600" />
+                <span>דחה בשנה</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => postponeMonthlyGoal(goal.id)}
+                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all shadow-2xs"
+                title="דחה/הארך בחודש קלנדרי נוסף"
+              >
+                <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                <span>דחה בחודש</span>
               </button>
             )}
 
-            {goal.timeframe !== 'weekly' && (
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => onAddSubGoal(goal.id, getSubGoalTimeframe())}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-xl transition-colors"
-                title="הוסף תת-יעד"
+                onClick={() => onEditGoal(goal)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                title="ערוך יעד"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">תת-יעד</span>
+                <Edit2 className="w-4 h-4" />
               </button>
-            )}
+
+              {onDeleteGoal && (
+                <button
+                  onClick={() => onDeleteGoal(goal)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  title="מחק יעד"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+
+              {isAnnual && (
+                <button
+                  onClick={() => onAddSubGoal(goal.id, 'monthly')}
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-xl transition-colors"
+                  title="הוסף יעד חודשי"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">יעד חודשי</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -233,3 +303,4 @@ export function GoalTreeItem({
     </div>
   );
 }
+

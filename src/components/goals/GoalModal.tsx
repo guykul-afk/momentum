@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Target, Save, CheckCircle, Trash2 } from 'lucide-react';
 import { Goal } from '@/types/models';
+import { getDefaultAnnualEndDate, getDefaultMonthlyEndDate } from '@/lib/goalUtils';
 
 interface GoalModalProps {
   isOpen: boolean;
@@ -10,7 +11,7 @@ interface GoalModalProps {
   onSave: (goal: Omit<Goal, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => void;
   availableParents?: Goal[];
   initialGoal?: Goal;
-  defaultTimeframe?: 'annual' | 'monthly' | 'weekly';
+  defaultTimeframe?: 'annual' | 'monthly';
   defaultParentId?: string;
   onDelete?: (goal: Goal) => void;
 }
@@ -27,8 +28,8 @@ export function GoalModal({
 }: GoalModalProps) {
   const [title, setTitle] = useState(initialGoal?.title || '');
   const [description, setDescription] = useState(initialGoal?.description || '');
-  const [timeframe, setTimeframe] = useState<'annual' | 'monthly' | 'weekly'>(
-    initialGoal?.timeframe || defaultTimeframe
+  const [timeframe, setTimeframe] = useState<'annual' | 'monthly'>(
+    initialGoal ? (initialGoal.timeframe || 'monthly') : defaultTimeframe
   );
   const [parentId, setParentId] = useState(initialGoal?.parentId || defaultParentId || '');
   const [krTitle, setKrTitle] = useState(initialGoal?.krTitle || '');
@@ -42,17 +43,45 @@ export function GoalModal({
     initialGoal?.category || 'work'
   );
 
+  React.useEffect(() => {
+    if (isOpen) {
+      setTitle(initialGoal?.title || '');
+      setDescription(initialGoal?.description || '');
+      setTimeframe(initialGoal ? (initialGoal.timeframe || 'monthly') : defaultTimeframe);
+      setParentId(initialGoal?.parentId || defaultParentId || '');
+      setKrTitle(initialGoal?.krTitle || '');
+      setKrTarget(initialGoal?.krTarget || 100);
+      setKrCurrent(initialGoal?.krCurrent || 0);
+      setKrUnit(initialGoal?.krUnit || '%');
+      setEffortTargetPoints(initialGoal?.effortTargetPoints || 20);
+      setCategory(initialGoal?.category || 'work');
+    }
+  }, [isOpen, initialGoal, defaultTimeframe, defaultParentId]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
+    const currentYear = new Date().getFullYear();
+    const currentMonthStr = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+    const targetYear = timeframe === 'annual' ? (initialGoal?.targetYear || currentYear) : undefined;
+    const targetMonth = timeframe === 'monthly' ? (initialGoal?.targetMonth || currentMonthStr) : undefined;
+    const endDate =
+      timeframe === 'annual'
+        ? getDefaultAnnualEndDate(targetYear)
+        : getDefaultMonthlyEndDate(targetMonth);
+
     onSave({
       title: title.trim(),
       description: description.trim() || undefined,
       timeframe,
-      parentId: parentId || undefined,
+      parentId: timeframe === 'monthly' ? parentId || undefined : undefined,
+      targetYear,
+      targetMonth,
+      endDate,
       krTitle: krTitle.trim() || 'יעד כמותי',
       krTarget: Number(krTarget) || 100,
       krCurrent: Number(krCurrent) || 0,
@@ -67,11 +96,7 @@ export function GoalModal({
     onClose();
   };
 
-  const filteredParents = availableParents.filter((g) => {
-    if (timeframe === 'monthly') return g.timeframe === 'annual';
-    if (timeframe === 'weekly') return g.timeframe === 'monthly';
-    return false;
-  });
+  const filteredParents = availableParents.filter((g) => g.timeframe === 'annual' && g.status === 'active');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
@@ -99,12 +124,11 @@ export function GoalModal({
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               רמת היררכיה בזמן
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {(
                 [
                   { id: 'annual', label: 'שנתי' },
                   { id: 'monthly', label: 'חודשי' },
-                  { id: 'weekly', label: 'שבועי' },
                 ] as const
               ).map((t) => (
                 <button
@@ -126,11 +150,11 @@ export function GoalModal({
             </div>
           </div>
 
-          {/* Parent Goal selection if monthly or weekly */}
-          {timeframe !== 'annual' && (
+          {/* Parent Goal selection if monthly */}
+          {timeframe === 'monthly' && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                שיוך ליעד אב ({timeframe === 'monthly' ? 'יעד שנתי' : 'יעד חודשי'})
+                שיוך ליעד אב (יעד שנתי)
               </label>
               <select
                 value={parentId}

@@ -20,7 +20,7 @@ export async function initAuth() {
     try {
       await signInAnonymously(auth);
     } catch (e) {
-      console.warn('Anonymous auth initialization warning:', e);
+      // Anonymous auth not enabled in console or offline - Firestore operates cleanly with public rules
     }
   }
 }

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Target, CheckSquare, Plus, Save } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { getDefaultAnnualEndDate, getDefaultMonthlyEndDate } from '@/lib/goalUtils';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -11,12 +12,12 @@ interface QuickAddModalProps {
 }
 
 export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAddModalProps) {
-  const { goals, addGoal, addRawCapture, triageApprove } = useAppStore();
+  const { goals, addGoal, addTask } = useAppStore();
   const [tab, setTab] = useState<'goal' | 'task'>(defaultTab);
 
   // Goal Form State
   const [goalTitle, setGoalTitle] = useState('');
-  const [goalTimeframe, setGoalTimeframe] = useState<'annual' | 'monthly' | 'weekly'>('monthly');
+  const [goalTimeframe, setGoalTimeframe] = useState<'annual' | 'monthly'>('monthly');
   const [goalCategory, setGoalCategory] = useState<'work' | 'personal' | 'health' | 'maintenance'>('work');
   const [goalParentId, setGoalParentId] = useState('');
   const [krTitle, setKrTitle] = useState('');
@@ -37,10 +38,20 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
     e.preventDefault();
     if (!goalTitle.trim()) return;
 
+    const currentYear = new Date().getFullYear();
+    const currentMonthStr = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+    const targetYear = goalTimeframe === 'annual' ? currentYear : undefined;
+    const targetMonth = goalTimeframe === 'monthly' ? currentMonthStr : undefined;
+    const endDate = goalTimeframe === 'annual' ? getDefaultAnnualEndDate(currentYear) : getDefaultMonthlyEndDate(currentMonthStr);
+
     addGoal({
       title: goalTitle.trim(),
       timeframe: goalTimeframe,
-      parentId: goalParentId || undefined,
+      parentId: goalTimeframe === 'monthly' ? goalParentId || undefined : undefined,
+      targetYear,
+      targetMonth,
+      endDate,
       category: goalCategory,
       krTitle: krTitle.trim() || 'יעד כמותי',
       krTarget: Number(krTarget) || 100,
@@ -61,10 +72,7 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
     e.preventDefault();
     if (!taskTitle.trim()) return;
 
-    const rawId = `cap-temp-${Date.now()}`;
-    addRawCapture(taskTitle);
-    triageApprove(
-      rawId,
+    addTask(
       {
         title: taskTitle.trim(),
         category: taskCategory,
@@ -80,11 +88,7 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
     onClose();
   };
 
-  const filteredParents = goals.filter((g) => {
-    if (goalTimeframe === 'monthly') return g.timeframe === 'annual';
-    if (goalTimeframe === 'weekly') return g.timeframe === 'monthly';
-    return false;
-  });
+  const filteredParents = goals.filter((g) => g.timeframe === 'annual' && g.status === 'active');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -145,12 +149,11 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">רמת זמן</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {(
                   [
                     { id: 'annual', label: 'שנתי' },
                     { id: 'monthly', label: 'חודשי' },
-                    { id: 'weekly', label: 'שבועי' },
                   ] as const
                 ).map((t) => (
                   <button

@@ -3,8 +3,11 @@ export interface Goal {
   uid: string; // The user ID owning the goal
   title: string;
   description?: string;
-  timeframe?: 'annual' | 'monthly' | 'weekly';
-  parentId?: string; // Links monthly -> annual or weekly -> monthly
+  timeframe?: 'annual' | 'monthly';
+  parentId?: string; // Links monthly -> annual
+  targetYear?: number; // e.g. 2026
+  targetMonth?: string; // e.g. '2026-07'
+  endDate?: string; // ISO date string or YYYY-MM-DD
   krTitle?: string; // Key Result description
   krTarget?: number;
   krCurrent?: number;

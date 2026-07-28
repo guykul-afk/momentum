@@ -4,6 +4,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Task, TaskInstance, RawCaptureItem, DailyStats, Goal, EndOfDayReflection, KrCheckin, WeeklyPlan, MonthlyCloseReport } from '../types/models';
 import { db, initAuth } from './firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import {
+  getPostponedMonthlyEndDate,
+  getPostponedAnnualEndDate,
+  getDefaultAnnualEndDate,
+  getDefaultMonthlyEndDate,
+} from './goalUtils';
 
 function getTodayDateString(): string {
   const d = new Date();
@@ -33,14 +39,18 @@ interface AppContextType {
   toggleTaskInstance: (taskId: string) => void;
   addRawCapture: (content: string, audioUrl?: string, audioDuration?: number) => void;
   deleteRawCapture: (id: string) => void;
+  addTask: (taskData: Partial<Task>, targetDate?: 'today' | 'tomorrow' | string) => Task;
   triageApprove: (rawId: string, taskData: Partial<Task>, targetDate?: 'today' | 'tomorrow' | string) => void;
   triageReject: (rawId: string) => void;
   addReflection: (reflection: Omit<EndOfDayReflection, 'id' | 'createdAt'>) => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
+  deleteTask: (taskId: string) => void;
   postponeTaskToTomorrow: (taskId: string) => void;
   addGoal: (goal: Omit<Goal, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => Goal;
   updateGoal: (goalId: string, updates: Partial<Goal>) => void;
   deleteGoal: (goalId: string) => void;
+  postponeMonthlyGoal: (goalId: string) => void;
+  postponeAnnualGoal: (goalId: string) => void;
   addKrCheckin: (goalId: string, value: number, notes?: string) => void;
   saveWeeklyPlan: (plan: Omit<WeeklyPlan, 'id' | 'uid' | 'createdAt'>) => void;
   performFreshStart: () => void;
@@ -145,53 +155,117 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Real-time Firestore Listeners for ALL collections (sync empty state properly)
-    const unsubGoals = onSnapshot(collection(db, 'goals'), (snapshot) => {
-      const items = snapshot.docs.map((d) => d.data() as Goal);
-      setGoals(items);
-      setLastSyncedAt(Date.now());
-    });
+    const unsubGoals = onSnapshot(
+      collection(db, 'goals'),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as Goal);
+        setGoals(items);
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore goals listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
 
-    const unsubTasks = onSnapshot(collection(db, 'tasks'), (snapshot) => {
-      const items = snapshot.docs.map((d) => d.data() as Task);
-      setTasks(items);
-      setLastSyncedAt(Date.now());
-    });
+    const unsubTasks = onSnapshot(
+      collection(db, 'tasks'),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as Task);
+        setTasks(items);
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore tasks listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
 
-    const unsubInstances = onSnapshot(collection(db, 'taskInstances'), (snapshot) => {
-      const items = snapshot.docs.map((d) => d.data() as TaskInstance);
-      setTaskInstances(items);
-      setLastSyncedAt(Date.now());
-    });
+    const unsubInstances = onSnapshot(
+      collection(db, 'taskInstances'),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as TaskInstance);
+        setTaskInstances(items);
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore instances listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
 
-    const unsubCaptures = onSnapshot(collection(db, 'rawCaptures'), (snapshot) => {
-      const items = snapshot.docs.map((d) => d.data() as RawCaptureItem);
-      setRawCaptures(items);
-      setLastSyncedAt(Date.now());
-    });
+    const unsubCaptures = onSnapshot(
+      collection(db, 'rawCaptures'),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as RawCaptureItem);
+        setRawCaptures(items);
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore captures listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
 
-    const unsubReflections = onSnapshot(collection(db, 'reflections'), (snapshot) => {
-      const items = snapshot.docs.map((d) => d.data() as EndOfDayReflection);
-      setReflections(items);
-      setLastSyncedAt(Date.now());
-    });
+    const unsubReflections = onSnapshot(
+      collection(db, 'reflections'),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as EndOfDayReflection);
+        setReflections(items);
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore reflections listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
 
-    const unsubCheckins = onSnapshot(collection(db, 'krCheckins'), (snapshot) => {
-      const items = snapshot.docs.map((d) => d.data() as KrCheckin);
-      setKrCheckins(items);
-      setLastSyncedAt(Date.now());
-    });
+    const unsubCheckins = onSnapshot(
+      collection(db, 'krCheckins'),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as KrCheckin);
+        setKrCheckins(items);
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore checkins listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
 
-    const unsubWeeklyPlans = onSnapshot(collection(db, 'weeklyPlans'), (snapshot) => {
-      const items = snapshot.docs.map((d) => d.data() as WeeklyPlan);
-      setWeeklyPlans(items);
-      setLastSyncedAt(Date.now());
-    });
+    const unsubWeeklyPlans = onSnapshot(
+      collection(db, 'weeklyPlans'),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as WeeklyPlan);
+        setWeeklyPlans(items);
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore weeklyPlans listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
 
-    const unsubMonthlyReports = onSnapshot(collection(db, 'monthlyReports'), (snapshot) => {
-      const items = snapshot.docs.map((d) => d.data() as MonthlyCloseReport);
-      setMonthlyReports(items);
-      setLastSyncedAt(Date.now());
-    });
+    const unsubMonthlyReports = onSnapshot(
+      collection(db, 'monthlyReports'),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as MonthlyCloseReport);
+        setMonthlyReports(items);
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore monthlyReports listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
 
     return () => {
       unsubGoals();
@@ -295,11 +369,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveToFirestore(() => deleteDoc(doc(db, 'rawCaptures', id)));
   };
 
-  const triageApprove = (
-    rawId: string,
+  const addTask = (
     taskData: Partial<Task>,
     targetDate?: 'today' | 'tomorrow' | string
-  ) => {
+  ): Task => {
     const newTask: Task = {
       id: `t-${Date.now()}`,
       uid: 'user-1',
@@ -340,6 +413,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setTaskInstances((prev) => [...prev, newInstance]);
     saveToFirestore(() => setDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
+
+    return newTask;
+  };
+
+  const triageApprove = (
+    rawId: string,
+    taskData: Partial<Task>,
+    targetDate?: 'today' | 'tomorrow' | string
+  ) => {
+    addTask(taskData, targetDate);
 
     setRawCaptures((prev) =>
       prev.map((c) => {
@@ -387,6 +470,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return t;
       })
     );
+  };
+
+  const deleteTask = (taskId: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setTaskInstances((prev) => prev.filter((i) => i.taskId !== taskId));
+    saveToFirestore(() => deleteDoc(doc(db, 'tasks', taskId)));
   };
 
   const postponeTaskToTomorrow = (taskId: string) => {
@@ -467,6 +556,57 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTasks((prevTasks) =>
       prevTasks.map((t) => (t.goalId === goalId ? { ...t, goalId: undefined, updatedAt: Date.now() } : t))
     );
+  };
+
+  const postponeMonthlyGoal = (goalId: string) => {
+    const goal = goals.find((g) => g.id === goalId);
+    if (!goal) return;
+
+    const { newEndDate, newYear, newMonthStr } = getPostponedMonthlyEndDate(goal.endDate);
+
+    let newParentId = goal.parentId;
+    if (newYear) {
+      let annualGoal = goals.find(
+        (g) =>
+          g.timeframe === 'annual' &&
+          (g.targetYear === newYear || (g.endDate && new Date(g.endDate).getFullYear() === newYear))
+      );
+      if (!annualGoal) {
+        annualGoal = addGoal({
+          title: `יעד שנתי לשנת ${newYear}`,
+          timeframe: 'annual',
+          targetYear: newYear,
+          endDate: getDefaultAnnualEndDate(newYear),
+          category: goal.category || 'work',
+          krTitle: 'יעד כמותי שנתי',
+          krTarget: 100,
+          krCurrent: 0,
+          krUnit: '%',
+          status: 'active',
+        });
+      }
+      newParentId = annualGoal.id;
+    }
+
+    updateGoal(goalId, {
+      endDate: newEndDate,
+      targetMonth: newMonthStr,
+      parentId: newParentId,
+      updatedAt: Date.now(),
+    });
+  };
+
+  const postponeAnnualGoal = (goalId: string) => {
+    const goal = goals.find((g) => g.id === goalId);
+    if (!goal) return;
+
+    const { newEndDate, newYear } = getPostponedAnnualEndDate(goal.endDate, goal.targetYear);
+
+    updateGoal(goalId, {
+      endDate: newEndDate,
+      targetYear: newYear,
+      updatedAt: Date.now(),
+    });
   };
 
   const addKrCheckin = (goalId: string, value: number, notes?: string) => {
@@ -564,14 +704,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         toggleTaskInstance,
         addRawCapture,
         deleteRawCapture,
+        addTask,
         triageApprove,
         triageReject,
         addReflection,
         updateTask,
+        deleteTask,
         postponeTaskToTomorrow,
         addGoal,
         updateGoal,
         deleteGoal,
+        postponeMonthlyGoal,
+        postponeAnnualGoal,
         addKrCheckin,
         saveWeeklyPlan,
         performFreshStart,
