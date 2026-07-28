@@ -85,7 +85,11 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
     onClose();
   };
 
-  const filteredParents = goals.filter((g) => g.timeframe === 'annual' && g.status === 'active');
+  const filteredParents = goals.filter(
+    (g) =>
+      g.status === 'active' &&
+      (g.timeframe === 'annual' || !g.parentId || g.id === goalParentId)
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">

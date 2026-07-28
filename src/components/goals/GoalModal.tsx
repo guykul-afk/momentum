@@ -92,7 +92,12 @@ export function GoalModal({
     onClose();
   };
 
-  const filteredParents = availableParents.filter((g) => g.timeframe === 'annual' && g.status === 'active');
+  const filteredParents = availableParents.filter(
+    (g) =>
+      g.status === 'active' &&
+      g.id !== initialGoal?.id &&
+      (g.timeframe === 'annual' || !g.parentId || g.id === parentId)
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">

@@ -28,7 +28,12 @@ export default function GoalsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Filter goals based on selection
-  const activeGoals = goals.filter((g) => g.status === 'active');
+  const activeGoals = goals
+    .filter((g) => g.status === 'active')
+    .map((g) => ({
+      ...g,
+      timeframe: g.timeframe || (g.parentId ? ('monthly' as const) : ('annual' as const)),
+    }));
 
   const filteredGoals = activeGoals.filter((g) => {
     if (timeframeFilter !== 'all' && g.timeframe !== timeframeFilter) return false;
@@ -43,7 +48,7 @@ export default function GoalsPage() {
   const rootGoals = filteredGoals.filter((g) => {
     if (timeframeFilter === 'monthly') return true;
     if (timeframeFilter === 'annual') return g.timeframe === 'annual';
-    return !g.parentId || !goals.some((parent) => parent.id === g.parentId);
+    return !g.parentId || !activeGoals.some((parent) => parent.id === g.parentId);
   });
 
   // Statistics calculation
