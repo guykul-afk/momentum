@@ -232,10 +232,10 @@ export default function MonthlyCloseRitualPage() {
               </div>
               <div>
                 <h2 className="text-sm font-bold text-slate-900">
-                  דוח AI: מאמץ מול תוצאה (Effort vs Outcome)
+                  דוח AI: ניתוח התקדמות יעדים ו-KRs
                 </h2>
                 <p className="text-[11px] text-slate-500">
-                  מחשב את הקורלציה בין היקף המאמץ שהושקע להישגי ה-KRs
+                  מחשב את הישגי ה-KRs ומספק תובנות אסטרטגיות
                 </p>
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function MonthlyCloseRitualPage() {
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <span className="text-xs font-bold text-teal-400 flex items-center gap-1.5">
                   <FileSpreadsheet className="w-4 h-4" />
-                  <span>דוח קורלציית מאמץ מול תוצאות</span>
+                  <span>דוח התקדמות יעדים ו-KRs</span>
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
                   מדד קורלציה: {Math.round(aiReport.effortOutcomeCorrelation * 100)}%

@@ -162,9 +162,9 @@ export default function WeeklyPlanningRitualPage() {
             <div>
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-cyan-600" />
-                <span>הגדרת קיבולת מאמץ שבועית</span>
+                <span>הגדרת מכסת משימות שבועית</span>
               </h3>
-              <p className="text-xs text-slate-500">קבע את מגבלת נקודות המאמץ שתוכל לבצע השבוע</p>
+              <p className="text-xs text-slate-500">קבע את מכסת המשימות המתוכננות שתוכל לבצע השבוע</p>
             </div>
 
             <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200">
@@ -175,7 +175,7 @@ export default function WeeklyPlanningRitualPage() {
                 onChange={(e) => setCapacityLimit(Math.max(10, Number(e.target.value)))}
                 className="w-16 text-center text-xs font-bold bg-white border border-slate-300 rounded-xl py-1 text-slate-800"
               />
-              <span className="text-xs font-bold text-slate-500">נקודות</span>
+              <span className="text-xs font-bold text-slate-500">משימות</span>
             </div>
           </div>
 
@@ -184,17 +184,17 @@ export default function WeeklyPlanningRitualPage() {
             <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 space-y-2 animate-pulse">
               <div className="flex items-center gap-2 font-bold text-xs">
                 <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>אזהרת עומס יתר! ({totalAllocatedPoints} / {capacityLimit} נקודות - {overloadPct}%)</span>
+                <span>אזהרת עומס יתר! ({totalAllocatedPoints} / {capacityLimit} משימות - {overloadPct}%)</span>
               </div>
               <p className="text-[11px] text-rose-700/90 leading-snug">
-                הקצאת הנקודות הנוכחית חורגת מקיבולת המאמץ השבועית שלך ב-{totalAllocatedPoints - capacityLimit} נקודות.
-                מומלץ להפחית נקודות מיעדים משניים כדי למנוע עומס ושחיקה.
+                הקצאת המשימות הנוכחית חורגת מקיבולת העבודה השבועית שלך ב-{totalAllocatedPoints - capacityLimit} משימות.
+                מומלץ להפחית משימות מיעדים משניים כדי למנוע עומס ושחיקה.
               </p>
             </div>
           ) : (
             <div className="p-3 rounded-2xl bg-cyan-50/80 border border-cyan-200 text-cyan-900 text-xs flex items-center justify-between">
               <span className="font-semibold">
-                קיבולת מנוצלת: {totalAllocatedPoints} / {capacityLimit} נקודות ({overloadPct}%)
+                קיבולת מנוצלת: {totalAllocatedPoints} / {capacityLimit} משימות ({overloadPct}%)
               </span>
               <span className="font-bold text-emerald-600">איזון תקין ✓</span>
             </div>
@@ -202,7 +202,7 @@ export default function WeeklyPlanningRitualPage() {
 
           {/* Goal Allocations List */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-700">הקצאת מכסת נקודות לפי יעדים פעילים:</h4>
+            <h4 className="text-xs font-bold text-slate-700">הקצאת מכסת משימות לפי יעדים פעילים:</h4>
 
             {activeGoals.map((g) => {
               const allocated = allocations[g.id] || 0;
@@ -240,7 +240,7 @@ export default function WeeklyPlanningRitualPage() {
                         onChange={(e) => handlePointChange(g.id, Number(e.target.value))}
                         className="w-12 text-center text-xs font-bold bg-white border border-slate-300 rounded-lg py-1 text-slate-800"
                       />
-                      <span className="text-[11px] text-slate-500">נק&apos;</span>
+                      <span className="text-[11px] text-slate-500">משימות</span>
                     </div>
                   </div>
                 </div>
@@ -333,7 +333,7 @@ export default function WeeklyPlanningRitualPage() {
 
           {isPlanSaved && (
             <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-semibold text-center border border-emerald-200 animate-in fade-in">
-              התכנון השבועי נשמר בהצלחה! מכסות הנקודות עודכנו בעץ היעדים.
+              התכנון השבועי נשמר בהצלחה! מכסות המשימות עודכנו.
             </div>
           )}
         </div>
