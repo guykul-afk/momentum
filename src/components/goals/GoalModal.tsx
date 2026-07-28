@@ -45,14 +45,17 @@ export function GoalModal({
       setTitle(initialGoal?.title || '');
       setDescription(initialGoal?.description || '');
       setTimeframe(initialGoal ? (initialGoal.timeframe || 'monthly') : defaultTimeframe);
-      setParentId(initialGoal?.parentId || defaultParentId || '');
+      const effectiveParentId = initialGoal?.parentId || defaultParentId || '';
+      setParentId(effectiveParentId);
       setKrTitle(initialGoal?.krTitle || '');
       setKrTarget(initialGoal?.krTarget || 100);
       setKrCurrent(initialGoal?.krCurrent || 0);
       setKrUnit(initialGoal?.krUnit || '%');
-      setCategory(initialGoal?.category || 'work');
+
+      const parentGoal = availableParents.find((p) => p.id === effectiveParentId);
+      setCategory(initialGoal?.category || parentGoal?.category || 'work');
     }
-  }, [isOpen, initialGoal, defaultTimeframe, defaultParentId]);
+  }, [isOpen, initialGoal, defaultTimeframe, defaultParentId, availableParents]);
 
   if (!isOpen) return null;
 
@@ -151,7 +154,14 @@ export function GoalModal({
               </label>
               <select
                 value={parentId}
-                onChange={(e) => setParentId(e.target.value)}
+                onChange={(e) => {
+                  const selectedId = e.target.value;
+                  setParentId(selectedId);
+                  if (!initialGoal && selectedId) {
+                    const p = availableParents.find((g) => g.id === selectedId);
+                    if (p?.category) setCategory(p.category);
+                  }
+                }}
                 className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="">-- ללא יעד אב ישיר --</option>

@@ -233,13 +233,13 @@ export default function GoalsPage() {
       ) : (
         <div className="space-y-4">
           {rootGoals.map((rootGoal) => {
-            const childGoals = filteredGoals.filter((g) => g.parentId === rootGoal.id);
+            const childGoals = activeGoals.filter((g) => g.parentId === rootGoal.id);
             return (
               <GoalTreeItem
                 key={rootGoal.id}
                 goal={rootGoal}
                 childGoals={childGoals}
-                allGoals={filteredGoals}
+                allGoals={activeGoals}
                 onAddSubGoal={(parentId, timeframe) => handleOpenAddModal(parentId, timeframe)}
                 onEditGoal={handleOpenEditModal}
                 onDeleteGoal={handleRequestDeleteGoal}
