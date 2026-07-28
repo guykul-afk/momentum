@@ -42,8 +42,11 @@ export function GoalTreeItem({
 }: GoalTreeItemProps) {
   const { tasks, taskInstances, postponeMonthlyGoal, postponeAnnualGoal } = useAppStore();
   const [isExpanded, setIsExpanded] = useState(true);
+
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
   const [checkinValue, setCheckinValue] = useState<number>(goal.krCurrent || 0);
+
+  if (level > 4) return null;
 
   const hasChildren = childGoals.length > 0;
   const starved = false;
@@ -278,7 +281,7 @@ export function GoalTreeItem({
           {/* Tree connector line */}
           <div className="absolute top-0 bottom-4 right-4 w-0.5 bg-slate-200/60" />
           {childGoals.map((child) => {
-            const grandChildren = allGoals.filter((g) => g.parentId === child.id);
+            const grandChildren = allGoals.filter((g) => g.parentId === child.id && g.id !== child.id && g.id !== goal.id);
             return (
               <GoalTreeItem
                 key={child.id}

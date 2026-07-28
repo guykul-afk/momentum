@@ -93,7 +93,7 @@ export default function GoalsPage() {
   };
 
   return (
-    <div className="space-y-5 pb-8 animate-in fade-in duration-200">
+    <div className="space-y-5 pb-8 transition-opacity duration-200">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
@@ -257,17 +257,19 @@ export default function GoalsPage() {
       )}
 
       {/* Goal Create / Edit Modal */}
-      <GoalModal
-        key={editingGoal ? editingGoal.id : `new-${modalDefaultTimeframe}-${modalDefaultParentId || 'root'}`}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveGoal}
-        onDelete={handleRequestDeleteGoal}
-        availableParents={goals}
-        initialGoal={editingGoal}
-        defaultTimeframe={modalDefaultTimeframe}
-        defaultParentId={modalDefaultParentId}
-      />
+      {isModalOpen && (
+        <GoalModal
+          key={editingGoal ? editingGoal.id : `new-${modalDefaultTimeframe}-${modalDefaultParentId || 'root'}`}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveGoal}
+          onDelete={handleRequestDeleteGoal}
+          availableParents={goals}
+          initialGoal={editingGoal}
+          defaultTimeframe={modalDefaultTimeframe}
+          defaultParentId={modalDefaultParentId}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       {deletingGoal && (

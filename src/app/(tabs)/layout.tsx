@@ -91,7 +91,8 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                  prefetch={true}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all select-none ${
                     isActive
                       ? 'bg-cyan-500 text-white shadow-xs font-semibold'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -124,7 +125,8 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all duration-200 active:scale-95 ${
+                prefetch={true}
+                className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all duration-200 active:scale-95 select-none ${
                   isActive
                     ? 'text-cyan-600 font-semibold'
                     : 'text-slate-500 hover:text-slate-700'
