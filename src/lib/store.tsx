@@ -154,12 +154,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsLoaded(true);
     }
 
-    // Real-time Firestore Listeners for ALL collections (sync empty state properly)
+    // Real-time Firestore Listeners for ALL collections with 2-way merging & auto-sync
     const unsubGoals = onSnapshot(
       collection(db, 'goals'),
       (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data() as Goal);
-        setGoals(items);
+        const serverItems = snapshot.docs.map((d) => d.data() as Goal);
+        setGoals((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            setDoc(doc(db, 'goals', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local goal to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -172,8 +181,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubTasks = onSnapshot(
       collection(db, 'tasks'),
       (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data() as Task);
-        setTasks(items);
+        const serverItems = snapshot.docs.map((d) => d.data() as Task);
+        setTasks((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            setDoc(doc(db, 'tasks', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local task to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -186,8 +204,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubInstances = onSnapshot(
       collection(db, 'taskInstances'),
       (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data() as TaskInstance);
-        setTaskInstances(items);
+        const serverItems = snapshot.docs.map((d) => d.data() as TaskInstance);
+        setTaskInstances((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            setDoc(doc(db, 'taskInstances', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local instance to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -200,8 +227,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubCaptures = onSnapshot(
       collection(db, 'rawCaptures'),
       (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data() as RawCaptureItem);
-        setRawCaptures(items);
+        const serverItems = snapshot.docs.map((d) => d.data() as RawCaptureItem);
+        setRawCaptures((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            setDoc(doc(db, 'rawCaptures', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local capture to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -214,8 +250,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubReflections = onSnapshot(
       collection(db, 'reflections'),
       (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data() as EndOfDayReflection);
-        setReflections(items);
+        const serverItems = snapshot.docs.map((d) => d.data() as EndOfDayReflection);
+        setReflections((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            setDoc(doc(db, 'reflections', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local reflection to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -228,8 +273,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubCheckins = onSnapshot(
       collection(db, 'krCheckins'),
       (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data() as KrCheckin);
-        setKrCheckins(items);
+        const serverItems = snapshot.docs.map((d) => d.data() as KrCheckin);
+        setKrCheckins((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            setDoc(doc(db, 'krCheckins', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local checkin to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -242,8 +296,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubWeeklyPlans = onSnapshot(
       collection(db, 'weeklyPlans'),
       (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data() as WeeklyPlan);
-        setWeeklyPlans(items);
+        const serverItems = snapshot.docs.map((d) => d.data() as WeeklyPlan);
+        setWeeklyPlans((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            setDoc(doc(db, 'weeklyPlans', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local plan to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -256,8 +319,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubMonthlyReports = onSnapshot(
       collection(db, 'monthlyReports'),
       (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data() as MonthlyCloseReport);
-        setMonthlyReports(items);
+        const serverItems = snapshot.docs.map((d) => d.data() as MonthlyCloseReport);
+        setMonthlyReports((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            setDoc(doc(db, 'monthlyReports', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local report to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
