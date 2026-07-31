@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Target, CheckSquare, Plus, Save } from 'lucide-react';
+import { X, Target, CheckSquare, Plus, Save, CheckCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { getDefaultAnnualEndDate, getDefaultMonthlyEndDate } from '@/lib/goalUtils';
 
@@ -12,22 +12,20 @@ interface QuickAddModalProps {
 }
 
 export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAddModalProps) {
-  const { goals, addGoal, addTask } = useAppStore();
+  const { goals, keyResults, addGoal, addTask } = useAppStore();
   const [tab, setTab] = useState<'goal' | 'task'>(defaultTab);
 
   // Goal Form State
   const [goalTitle, setGoalTitle] = useState('');
-  const [goalTimeframe, setGoalTimeframe] = useState<'annual' | 'monthly'>('monthly');
+  const [goalTimeframe, setGoalTimeframe] = useState<'annual' | 'quarterly' | 'monthly'>('quarterly');
   const [goalCategory, setGoalCategory] = useState<'work' | 'personal' | 'health' | 'maintenance'>('work');
   const [goalParentId, setGoalParentId] = useState('');
-  const [krTitle, setKrTitle] = useState('');
-  const [krTarget, setKrTarget] = useState(100);
-  const [krUnit, setKrUnit] = useState('%');
 
   // Task Form State
   const [taskTitle, setTaskTitle] = useState('');
   const [taskCategory, setTaskCategory] = useState<'work' | 'personal' | 'health' | 'maintenance'>('work');
   const [taskGoalId, setTaskGoalId] = useState('');
+  const [taskKeyResultId, setTaskKeyResultId] = useState('');
   const [taskWeight, setTaskWeight] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [taskMinutes, setTaskMinutes] = useState(30);
   const [taskTargetDate, setTaskTargetDate] = useState<'today' | 'tomorrow'>('today');
@@ -40,28 +38,26 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
 
     const currentYear = new Date().getFullYear();
     const currentMonthStr = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    const currentQuarterStr = `${currentYear}-Q${Math.ceil((new Date().getMonth() + 1) / 3)}`;
 
     const targetYear = goalTimeframe === 'annual' ? currentYear : undefined;
+    const targetQuarter = goalTimeframe === 'quarterly' ? currentQuarterStr : undefined;
     const targetMonth = goalTimeframe === 'monthly' ? currentMonthStr : undefined;
     const endDate = goalTimeframe === 'annual' ? getDefaultAnnualEndDate(currentYear) : getDefaultMonthlyEndDate(currentMonthStr);
 
     addGoal({
       title: goalTitle.trim(),
       timeframe: goalTimeframe,
-      parentId: goalTimeframe === 'monthly' ? goalParentId || undefined : undefined,
+      parentId: goalParentId || undefined,
       targetYear,
+      targetQuarter,
       targetMonth,
       endDate,
       category: goalCategory,
-      krTitle: krTitle.trim() || 'יעד כמותי',
-      krTarget: Number(krTarget) || 100,
-      krCurrent: 0,
-      krUnit: krUnit.trim() || '%',
       status: 'active',
     });
 
     setGoalTitle('');
-    setKrTitle('');
     onClose();
   };
 
@@ -74,6 +70,7 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
         title: taskTitle.trim(),
         category: taskCategory,
         goalId: taskGoalId || undefined,
+        keyResultId: taskKeyResultId || undefined,
         weight: taskWeight,
         estimatedMinutes: taskMinutes,
         type: 'daily',
@@ -82,14 +79,16 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
     );
 
     setTaskTitle('');
+    setTaskGoalId('');
+    setTaskKeyResultId('');
     onClose();
   };
 
   const filteredParents = goals.filter(
-    (g) =>
-      g.status === 'active' &&
-      (g.timeframe === 'annual' || !g.parentId || g.id === goalParentId)
+    (g) => g.status === 'active' && (g.timeframe === 'annual' || !g.parentId || g.id === goalParentId)
   );
+
+  const availableKrs = taskGoalId ? keyResults.filter((kr) => kr.goalId === taskGoalId) : [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -107,7 +106,7 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
               }`}
             >
               <Target className="w-4 h-4" />
-              <span>יעד חדש</span>
+              <span>יעד חדש (Objective)</span>
             </button>
             <button
               type="button"
@@ -119,7 +118,7 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
               }`}
             >
               <CheckSquare className="w-4 h-4" />
-              <span>משימה חדשה</span>
+              <span>משימה חדשה (Initiative)</span>
             </button>
           </div>
 
@@ -143,17 +142,18 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
                 required
                 value={goalTitle}
                 onChange={(e) => setGoalTitle(e.target.value)}
-                placeholder="לדוגמה: השקת מוצר Momentum v1.0"
+                placeholder="לדוגמה: להפוך למובילים בשביעות רצון הלקוחות"
                 className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">רמת זמן</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {(
                   [
                     { id: 'annual', label: 'שנתי' },
+                    { id: 'quarterly', label: 'רבעוני' },
                     { id: 'monthly', label: 'חודשי' },
                   ] as const
                 ).map((t) => (
@@ -164,7 +164,7 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
                       setGoalTimeframe(t.id);
                       setGoalParentId('');
                     }}
-                    className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                    className={`py-2 text-xs font-bold rounded-xl border transition-all text-center ${
                       goalTimeframe === t.id
                         ? 'bg-cyan-500 text-white border-cyan-500 shadow-xs'
                         : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -221,40 +221,6 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
               </div>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-              <div className="text-xs font-bold text-slate-700">מדד תוצאה (Key Result - KR)</div>
-              <div>
-                <input
-                  type="text"
-                  value={krTitle}
-                  onChange={(e) => setKrTitle(e.target.value)}
-                  placeholder="תיאור מדד (לדוגמה: 100 לקוחות חדשים)"
-                  className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-medium text-slate-500 mb-0.5">ערך יעד</label>
-                  <input
-                    type="number"
-                    value={krTarget}
-                    onChange={(e) => setKrTarget(Number(e.target.value))}
-                    className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-medium text-slate-500 mb-0.5">יחידה</label>
-                  <input
-                    type="text"
-                    value={krUnit}
-                    onChange={(e) => setKrUnit(e.target.value)}
-                    placeholder="%, משתמשים"
-                    className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-800"
-                  />
-                </div>
-              </div>
-            </div>
-
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
@@ -292,6 +258,33 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
             </div>
 
             <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">קטגוריה</label>
+              <div className="grid grid-cols-4 gap-2">
+                {(
+                  [
+                    { id: 'work', label: 'עבודה' },
+                    { id: 'personal', label: 'אישי' },
+                    { id: 'health', label: 'בריאות' },
+                    { id: 'maintenance', label: 'תפעול' },
+                  ] as const
+                ).map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setTaskCategory(c.id)}
+                    className={`py-1.5 text-[11px] font-semibold rounded-lg border transition-all ${
+                      taskCategory === c.id
+                        ? 'bg-slate-800 text-white border-slate-800'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">תאריך יעד</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -319,21 +312,57 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
               </div>
             </div>
 
+            {/* OKR Goal & KR Linkage */}
             {goals.length > 0 && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">שיוך ליעד</label>
-                <select
-                  value={taskGoalId}
-                  onChange={(e) => setTaskGoalId(e.target.value)}
-                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                >
-                  <option value="">-- ללא שיוך ליעד --</option>
-                  {goals.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.title} ({g.timeframe})
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Target className="w-3.5 h-3.5 text-cyan-600" />
+                    <span>1. שיוך ליעד אב (Objective)</span>
+                  </label>
+                  <select
+                    value={taskGoalId}
+                    onChange={(e) => {
+                      const selectedGId = e.target.value;
+                      setTaskGoalId(selectedGId);
+                      setTaskKeyResultId('');
+                    }}
+                    className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="">-- ללא שיוך ליעד --</option>
+                    {goals.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.title} ({g.timeframe})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {taskGoalId && (
+                  <div className="animate-in fade-in duration-200">
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>2. שיוך למדד תוצאה (Key Result - KR)</span>
+                    </label>
+                    <select
+                      value={taskKeyResultId}
+                      onChange={(e) => setTaskKeyResultId(e.target.value)}
+                      className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                    >
+                      <option value="">-- בחר מדד KR לקדום --</option>
+                      {availableKrs.map((kr) => (
+                        <option key={kr.id} value={kr.id}>
+                          {kr.title} ({kr.current} / {kr.target} {kr.unit})
+                        </option>
+                      ))}
+                    </select>
+                    {availableKrs.length === 0 && (
+                      <p className="text-[11px] text-amber-600 mt-1.5 italic">
+                        ⚠️ ליעד זה טרם הוגדרו מדדי KR. ניתן להוסיף KR ליעד בעמוד היעדים.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

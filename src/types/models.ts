@@ -3,25 +3,36 @@ export interface Goal {
   uid: string; // The user ID owning the goal
   title: string;
   description?: string;
-  timeframe?: 'annual' | 'monthly';
-  parentId?: string; // Links monthly -> annual
+  timeframe?: 'annual' | 'quarterly' | 'monthly';
+  parentId?: string; // Links quarterly/monthly -> parent goal
   targetYear?: number; // e.g. 2026
+  targetQuarter?: string; // e.g. '2026-Q3'
   targetMonth?: string; // e.g. '2026-07'
   endDate?: string; // ISO date string or YYYY-MM-DD
-  krTitle?: string; // Key Result description
-  krTarget?: number;
-  krCurrent?: number;
-  krUnit?: string;
   category?: 'work' | 'personal' | 'health' | 'maintenance';
   createdAt: number;
   updatedAt: number;
   status: 'active' | 'completed' | 'archived';
 }
 
+export interface KeyResult {
+  id: string;
+  uid: string;
+  goalId: string;
+  title: string;
+  target: number;
+  current: number;
+  unit: string;
+  confidenceScore?: number; // 1 to 10
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Task {
   id: string;
   uid: string;
   goalId?: string;
+  keyResultId?: string;
   title: string;
   description?: string;
   type: 'daily' | 'one-off' | 'recurring';
@@ -63,6 +74,7 @@ export interface RawCaptureItem {
     type: 'daily' | 'one-off' | 'recurring';
     category: 'work' | 'personal' | 'health' | 'maintenance' | 'habit';
     goalId?: string;
+    keyResultId?: string;
     when?: string;
     where?: string;
     aiRationale?: string;
@@ -85,7 +97,9 @@ export interface KrCheckin {
   id: string;
   uid: string;
   goalId: string;
+  keyResultId: string;
   value: number;
+  confidenceScore?: number;
   notes?: string;
   date: string; // YYYY-MM-DD
   createdAt: number;

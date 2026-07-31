@@ -1,9 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Task, TaskInstance, RawCaptureItem, DailyStats, Goal, EndOfDayReflection, KrCheckin, WeeklyPlan, MonthlyCloseReport } from '../types/models';
+import { Task, TaskInstance, RawCaptureItem, DailyStats, Goal, KeyResult, EndOfDayReflection, KrCheckin, WeeklyPlan, MonthlyCloseReport } from '../types/models';
 import { db, initAuth } from './firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, DocumentReference, SetOptions } from 'firebase/firestore';
 import {
   getPostponedMonthlyEndDate,
   getPostponedAnnualEndDate,
@@ -24,12 +24,34 @@ function getTomorrowDateString(): string {
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline';
 
+// Helper function to sanitize objects for Firestore (removes undefined fields)
+function cleanForFirestore<T extends object>(obj: T): Record<string, unknown> {
+  if (!obj || typeof obj !== 'object') return (obj || {}) as Record<string, unknown>;
+  const clean: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (val !== undefined) {
+      clean[key] = val;
+    }
+  }
+  return clean;
+}
+
+function safeSetDoc<T extends object>(
+  reference: DocumentReference,
+  data: T,
+  options?: SetOptions
+) {
+  const cleaned = cleanForFirestore(data);
+  return options ? setDoc(reference, cleaned, options) : setDoc(reference, cleaned);
+}
+
 interface AppContextType {
   tasks: Task[];
   taskInstances: TaskInstance[];
   rawCaptures: RawCaptureItem[];
   dailyStats: DailyStats[];
   goals: Goal[];
+  keyResults: KeyResult[];
   reflections: EndOfDayReflection[];
   krCheckins: KrCheckin[];
   weeklyPlans: WeeklyPlan[];
@@ -51,7 +73,10 @@ interface AppContextType {
   deleteGoal: (goalId: string) => void;
   postponeMonthlyGoal: (goalId: string) => void;
   postponeAnnualGoal: (goalId: string) => void;
-  addKrCheckin: (goalId: string, value: number, notes?: string) => void;
+  addKeyResult: (krData: Omit<KeyResult, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => KeyResult;
+  updateKeyResult: (krId: string, updates: Partial<KeyResult>) => void;
+  deleteKeyResult: (krId: string) => void;
+  addKrCheckin: (goalId: string, keyResultId: string, value: number, confidenceScore?: number, notes?: string) => void;
   saveWeeklyPlan: (plan: Omit<WeeklyPlan, 'id' | 'uid' | 'createdAt'>) => void;
   performFreshStart: () => void;
   saveMonthlyCloseReport: (report: Omit<MonthlyCloseReport, 'id' | 'uid' | 'createdAt'>) => void;
@@ -66,6 +91,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [rawCaptures, setRawCaptures] = useState<RawCaptureItem[]>([]);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
   const [reflections, setReflections] = useState<EndOfDayReflection[]>([]);
   const [krCheckins, setKrCheckins] = useState<KrCheckin[]>([]);
   const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
@@ -113,26 +139,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initAuth();
 
+    let isReset = false;
     try {
-      // Force clear old cached dummy data if reset flag not present
-      const isReset = localStorage.getItem('momentum_reset_v2');
+      isReset = !!localStorage.getItem('momentum_reset_v5');
       if (!isReset) {
-        localStorage.removeItem('momentum_tasks');
-        localStorage.removeItem('momentum_instances');
-        localStorage.removeItem('momentum_captures');
-        localStorage.removeItem('momentum_stats');
-        localStorage.removeItem('momentum_goals');
-        localStorage.removeItem('momentum_reflections');
-        localStorage.removeItem('momentum_kr_checkins');
-        localStorage.removeItem('momentum_weekly_plans');
-        localStorage.removeItem('momentum_monthly_reports');
-        localStorage.setItem('momentum_reset_v2', 'true');
+        localStorage.clear();
+        localStorage.setItem('momentum_reset_v5', 'true');
       } else {
         const savedTasks = localStorage.getItem('momentum_tasks');
         const savedInstances = localStorage.getItem('momentum_instances');
         const savedCaptures = localStorage.getItem('momentum_captures');
         const savedStats = localStorage.getItem('momentum_stats');
         const savedGoals = localStorage.getItem('momentum_goals');
+        const savedKeyResults = localStorage.getItem('momentum_key_results');
         const savedReflections = localStorage.getItem('momentum_reflections');
         const savedCheckins = localStorage.getItem('momentum_kr_checkins');
         const savedWeeklyPlans = localStorage.getItem('momentum_weekly_plans');
@@ -143,6 +162,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (savedCaptures) setRawCaptures(JSON.parse(savedCaptures));
         if (savedStats) setDailyStats(JSON.parse(savedStats));
         if (savedGoals) setGoals(JSON.parse(savedGoals));
+        if (savedKeyResults) setKeyResults(JSON.parse(savedKeyResults));
         if (savedReflections) setReflections(JSON.parse(savedReflections));
         if (savedCheckins) setKrCheckins(JSON.parse(savedCheckins));
         if (savedWeeklyPlans) setWeeklyPlans(JSON.parse(savedWeeklyPlans));
@@ -158,12 +178,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubGoals = onSnapshot(
       collection(db, 'goals'),
       (snapshot) => {
+        if (!isReset) {
+          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
+          setGoals([]);
+          return;
+        }
         const serverItems = snapshot.docs.map((d) => d.data() as Goal);
         setGoals((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
           const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
           unsynced.forEach((item) => {
-            setDoc(doc(db, 'goals', item.id), item).catch((err) =>
+            safeSetDoc(doc(db, 'goals', item.id), item).catch((err) =>
               console.warn('Failed auto-syncing local goal to Firestore:', err)
             );
           });
@@ -178,15 +203,48 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
+    const unsubKeyResults = onSnapshot(
+      collection(db, 'keyResults'),
+      (snapshot) => {
+        if (!isReset) {
+          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
+          setKeyResults([]);
+          return;
+        }
+        const serverItems = snapshot.docs.map((d) => d.data() as KeyResult);
+        setKeyResults((prevLocal) => {
+          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
+          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
+          unsynced.forEach((item) => {
+            safeSetDoc(doc(db, 'keyResults', item.id), item).catch((err) =>
+              console.warn('Failed auto-syncing local keyResult to Firestore:', err)
+            );
+          });
+          return [...serverItems, ...unsynced];
+        });
+        setSyncStatus('synced');
+        setLastSyncedAt(Date.now());
+      },
+      (err) => {
+        console.warn('Firestore keyResults listener warning:', err);
+        setSyncStatus('offline');
+      }
+    );
+
     const unsubTasks = onSnapshot(
       collection(db, 'tasks'),
       (snapshot) => {
+        if (!isReset) {
+          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
+          setTasks([]);
+          return;
+        }
         const serverItems = snapshot.docs.map((d) => d.data() as Task);
         setTasks((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
           const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
           unsynced.forEach((item) => {
-            setDoc(doc(db, 'tasks', item.id), item).catch((err) =>
+            safeSetDoc(doc(db, 'tasks', item.id), item).catch((err) =>
               console.warn('Failed auto-syncing local task to Firestore:', err)
             );
           });
@@ -204,12 +262,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubInstances = onSnapshot(
       collection(db, 'taskInstances'),
       (snapshot) => {
+        if (!isReset) {
+          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
+          setTaskInstances([]);
+          return;
+        }
         const serverItems = snapshot.docs.map((d) => d.data() as TaskInstance);
         setTaskInstances((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
           const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
           unsynced.forEach((item) => {
-            setDoc(doc(db, 'taskInstances', item.id), item).catch((err) =>
+            safeSetDoc(doc(db, 'taskInstances', item.id), item).catch((err) =>
               console.warn('Failed auto-syncing local instance to Firestore:', err)
             );
           });
@@ -227,12 +290,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubCaptures = onSnapshot(
       collection(db, 'rawCaptures'),
       (snapshot) => {
+        if (!isReset) {
+          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
+          setRawCaptures([]);
+          return;
+        }
         const serverItems = snapshot.docs.map((d) => d.data() as RawCaptureItem);
         setRawCaptures((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
           const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
           unsynced.forEach((item) => {
-            setDoc(doc(db, 'rawCaptures', item.id), item).catch((err) =>
+            safeSetDoc(doc(db, 'rawCaptures', item.id), item).catch((err) =>
               console.warn('Failed auto-syncing local capture to Firestore:', err)
             );
           });
@@ -255,7 +323,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
           const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
           unsynced.forEach((item) => {
-            setDoc(doc(db, 'reflections', item.id), item).catch((err) =>
+            safeSetDoc(doc(db, 'reflections', item.id), item).catch((err) =>
               console.warn('Failed auto-syncing local reflection to Firestore:', err)
             );
           });
@@ -278,7 +346,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
           const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
           unsynced.forEach((item) => {
-            setDoc(doc(db, 'krCheckins', item.id), item).catch((err) =>
+            safeSetDoc(doc(db, 'krCheckins', item.id), item).catch((err) =>
               console.warn('Failed auto-syncing local checkin to Firestore:', err)
             );
           });
@@ -301,7 +369,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
           const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
           unsynced.forEach((item) => {
-            setDoc(doc(db, 'weeklyPlans', item.id), item).catch((err) =>
+            safeSetDoc(doc(db, 'weeklyPlans', item.id), item).catch((err) =>
               console.warn('Failed auto-syncing local plan to Firestore:', err)
             );
           });
@@ -324,7 +392,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
           const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
           unsynced.forEach((item) => {
-            setDoc(doc(db, 'monthlyReports', item.id), item).catch((err) =>
+            safeSetDoc(doc(db, 'monthlyReports', item.id), item).catch((err) =>
               console.warn('Failed auto-syncing local report to Firestore:', err)
             );
           });
@@ -341,6 +409,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       unsubGoals();
+      unsubKeyResults();
       unsubTasks();
       unsubInstances();
       unsubCaptures();
@@ -360,6 +429,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('momentum_captures', JSON.stringify(rawCaptures));
       localStorage.setItem('momentum_stats', JSON.stringify(dailyStats));
       localStorage.setItem('momentum_goals', JSON.stringify(goals));
+      localStorage.setItem('momentum_key_results', JSON.stringify(keyResults));
       localStorage.setItem('momentum_reflections', JSON.stringify(reflections));
       localStorage.setItem('momentum_kr_checkins', JSON.stringify(krCheckins));
       localStorage.setItem('momentum_weekly_plans', JSON.stringify(weeklyPlans));
@@ -367,7 +437,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('Failed to save to localStorage', e);
     }
-  }, [tasks, taskInstances, rawCaptures, dailyStats, goals, reflections, krCheckins, weeklyPlans, monthlyReports, isLoaded]);
+  }, [tasks, taskInstances, rawCaptures, dailyStats, goals, keyResults, reflections, krCheckins, weeklyPlans, monthlyReports, isLoaded]);
 
   const toggleTaskInstance = (taskId: string) => {
     const today = getTodayDateString();
@@ -394,7 +464,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Save instance to Firestore
-    saveToFirestore(() => setDoc(doc(db, 'taskInstances', updatedInstance.id), updatedInstance));
+    saveToFirestore(() => safeSetDoc(doc(db, 'taskInstances', updatedInstance.id), updatedInstance));
 
     // Update habit streak in tasks if applicable
     setTasks((prevTasks) =>
@@ -405,7 +475,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             ? Math.max(0, (t.streakCount || 1) - 1)
             : (t.streakCount || 0) + 1;
           const updatedTask = { ...t, streakCount: newStreak };
-          saveToFirestore(() => setDoc(doc(db, 'tasks', taskId), updatedTask, { merge: true }));
+          saveToFirestore(() => safeSetDoc(doc(db, 'tasks', taskId), updatedTask, { merge: true }));
           return updatedTask;
         }
         return t;
@@ -433,7 +503,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
     };
     setRawCaptures((prev) => [newItem, ...prev]);
-    saveToFirestore(() => setDoc(doc(db, 'rawCaptures', newItem.id), newItem));
+    saveToFirestore(() => safeSetDoc(doc(db, 'rawCaptures', newItem.id), newItem));
   };
 
   const deleteRawCapture = (id: string) => {
@@ -466,7 +536,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setTasks((prev) => [newTask, ...prev]);
-    saveToFirestore(() => setDoc(doc(db, 'tasks', newTask.id), newTask));
+    saveToFirestore(() => safeSetDoc(doc(db, 'tasks', newTask.id), newTask));
 
     const targetDateStr =
       targetDate === 'tomorrow'
@@ -484,7 +554,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setTaskInstances((prev) => [...prev, newInstance]);
-    saveToFirestore(() => setDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
+    saveToFirestore(() => safeSetDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
 
     return newTask;
   };
@@ -500,7 +570,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((c) => {
         if (c.id === rawId) {
           const updated = { ...c, status: 'triaged' as const };
-          saveToFirestore(() => setDoc(doc(db, 'rawCaptures', rawId), updated, { merge: true }));
+          saveToFirestore(() => safeSetDoc(doc(db, 'rawCaptures', rawId), updated, { merge: true }));
           return updated;
         }
         return c;
@@ -513,7 +583,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((c) => {
         if (c.id === rawId) {
           const updated = { ...c, status: 'discarded' as const };
-          saveToFirestore(() => setDoc(doc(db, 'rawCaptures', rawId), updated, { merge: true }));
+          saveToFirestore(() => safeSetDoc(doc(db, 'rawCaptures', rawId), updated, { merge: true }));
           return updated;
         }
         return c;
@@ -528,7 +598,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setReflections((prev) => [newRef, ...prev]);
-    saveToFirestore(() => setDoc(doc(db, 'reflections', newRef.id), newRef));
+    saveToFirestore(() => safeSetDoc(doc(db, 'reflections', newRef.id), newRef));
   };
 
   const updateTask = (taskId: string, updates: Partial<Task>) => {
@@ -536,7 +606,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((t) => {
         if (t.id === taskId) {
           const updated = { ...t, ...updates, updatedAt: Date.now() };
-          saveToFirestore(() => setDoc(doc(db, 'tasks', taskId), updated, { merge: true }));
+          saveToFirestore(() => safeSetDoc(doc(db, 'tasks', taskId), updated, { merge: true }));
           return updated;
         }
         return t;
@@ -558,7 +628,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((t) => {
         if (t.id === taskId) {
           const updated = { ...t, postponeCount: (t.postponeCount || 0) + 1, updatedAt: Date.now() };
-          saveToFirestore(() => setDoc(doc(db, 'tasks', taskId), updated, { merge: true }));
+          saveToFirestore(() => safeSetDoc(doc(db, 'tasks', taskId), updated, { merge: true }));
           return updated;
         }
         return t;
@@ -578,7 +648,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return [...filtered, newInstance];
     });
 
-    saveToFirestore(() => setDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
+    saveToFirestore(() => safeSetDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
   };
 
   const addGoal = (goalData: Omit<Goal, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => {
@@ -591,7 +661,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updatedAt: Date.now(),
     };
     setGoals((prev) => [...prev, newGoal]);
-    saveToFirestore(() => setDoc(doc(db, 'goals', newGoal.id), newGoal));
+    saveToFirestore(() => safeSetDoc(doc(db, 'goals', newGoal.id), newGoal));
     return newGoal;
   };
 
@@ -600,7 +670,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((g) => {
         if (g.id === goalId) {
           const updated = { ...g, ...updates, updatedAt: Date.now() };
-          saveToFirestore(() => setDoc(doc(db, 'goals', goalId), updated, { merge: true }));
+          saveToFirestore(() => safeSetDoc(doc(db, 'goals', goalId), updated, { merge: true }));
           return updated;
         }
         return g;
@@ -620,13 +690,53 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setGoals((prevGoals) => prevGoals.filter((g) => !idsToDeleteSet.has(g.id)));
 
+    // Cascade delete KeyResults belonging to deleted goals
+    setKeyResults((prevKrs) => {
+      const krsToDelete = prevKrs.filter((kr) => idsToDeleteSet.has(kr.goalId));
+      krsToDelete.forEach((kr) => {
+        saveToFirestore(() => deleteDoc(doc(db, 'keyResults', kr.id)));
+      });
+      return prevKrs.filter((kr) => !idsToDeleteSet.has(kr.goalId));
+    });
+
     idsToDelete.forEach((id) => {
       saveToFirestore(() => deleteDoc(doc(db, 'goals', id)));
     });
 
     setTasks((prevTasks) =>
-      prevTasks.map((t) => (t.goalId === goalId ? { ...t, goalId: undefined, updatedAt: Date.now() } : t))
+      prevTasks.map((t) => (t.goalId === goalId ? { ...t, goalId: undefined, keyResultId: undefined, updatedAt: Date.now() } : t))
     );
+  };
+
+  const addKeyResult = (krData: Omit<KeyResult, 'id' | 'uid' | 'createdAt' | 'updatedAt'>): KeyResult => {
+    const newKr: KeyResult = {
+      ...krData,
+      id: `kr-${Date.now()}`,
+      uid: 'user-1',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    setKeyResults((prev) => [...prev, newKr]);
+    saveToFirestore(() => safeSetDoc(doc(db, 'keyResults', newKr.id), newKr));
+    return newKr;
+  };
+
+  const updateKeyResult = (krId: string, updates: Partial<KeyResult>) => {
+    setKeyResults((prev) =>
+      prev.map((kr) => {
+        if (kr.id === krId) {
+          const updated = { ...kr, ...updates, updatedAt: Date.now() };
+          saveToFirestore(() => safeSetDoc(doc(db, 'keyResults', krId), updated, { merge: true }));
+          return updated;
+        }
+        return kr;
+      })
+    );
+  };
+
+  const deleteKeyResult = (krId: string) => {
+    setKeyResults((prev) => prev.filter((kr) => kr.id !== krId));
+    saveToFirestore(() => deleteDoc(doc(db, 'keyResults', krId)));
   };
 
   const postponeMonthlyGoal = (goalId: string) => {
@@ -649,10 +759,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           targetYear: newYear,
           endDate: getDefaultAnnualEndDate(newYear),
           category: goal.category || 'work',
-          krTitle: 'יעד כמותי שנתי',
-          krTarget: 100,
-          krCurrent: 0,
-          krUnit: '%',
           status: 'active',
         });
       }
@@ -680,20 +786,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const addKrCheckin = (goalId: string, value: number, notes?: string) => {
+  const addKrCheckin = (goalId: string, keyResultId: string, value: number, confidenceScore?: number, notes?: string) => {
     const today = getTodayDateString();
     const newCheckin: KrCheckin = {
-      id: `kr-${Date.now()}`,
+      id: `checkin-${Date.now()}`,
       uid: 'user-1',
       goalId,
+      keyResultId,
       value,
+      confidenceScore,
       notes,
       date: today,
       createdAt: Date.now(),
     };
     setKrCheckins((prev) => [newCheckin, ...prev]);
-    saveToFirestore(() => setDoc(doc(db, 'krCheckins', newCheckin.id), newCheckin));
-    updateGoal(goalId, { krCurrent: value, updatedAt: Date.now() });
+    saveToFirestore(() => safeSetDoc(doc(db, 'krCheckins', newCheckin.id), newCheckin));
+    
+    // Update keyResult
+    updateKeyResult(keyResultId, {
+      current: value,
+      ...(confidenceScore ? { confidenceScore } : {}),
+      updatedAt: Date.now(),
+    });
   };
 
   const saveWeeklyPlan = (planData: Omit<WeeklyPlan, 'id' | 'uid' | 'createdAt'>) => {
@@ -704,7 +818,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setWeeklyPlans((prev) => [newPlan, ...prev]);
-    saveToFirestore(() => setDoc(doc(db, 'weeklyPlans', newPlan.id), newPlan));
+    saveToFirestore(() => safeSetDoc(doc(db, 'weeklyPlans', newPlan.id), newPlan));
   };
 
   const performFreshStart = () => {
@@ -719,7 +833,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setMonthlyReports((prev) => [newReport, ...prev]);
-    saveToFirestore(() => setDoc(doc(db, 'monthlyReports', newReport.id), newReport));
+    saveToFirestore(() => safeSetDoc(doc(db, 'monthlyReports', newReport.id), newReport));
   };
 
   const clearAllData = () => {
@@ -728,6 +842,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRawCaptures([]);
     setDailyStats([]);
     setGoals([]);
+    setKeyResults([]);
     setReflections([]);
     setKrCheckins([]);
     setWeeklyPlans([]);
@@ -739,6 +854,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('momentum_captures');
       localStorage.removeItem('momentum_stats');
       localStorage.removeItem('momentum_goals');
+      localStorage.removeItem('momentum_key_results');
       localStorage.removeItem('momentum_reflections');
       localStorage.removeItem('momentum_kr_checkins');
       localStorage.removeItem('momentum_weekly_plans');
@@ -756,6 +872,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         rawCaptures,
         dailyStats,
         goals,
+        keyResults,
         reflections,
         krCheckins,
         weeklyPlans,
@@ -777,6 +894,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         deleteGoal,
         postponeMonthlyGoal,
         postponeAnnualGoal,
+        addKeyResult,
+        updateKeyResult,
+        deleteKeyResult,
         addKrCheckin,
         saveWeeklyPlan,
         performFreshStart,

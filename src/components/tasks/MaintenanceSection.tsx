@@ -2,12 +2,13 @@
 
 import React from 'react';
 import { Task, TaskInstance } from '@/types/models';
-import { Wrench, Check } from 'lucide-react';
+import { Wrench, Check, Edit2 } from 'lucide-react';
 
 interface MaintenanceSectionProps {
   maintenanceTasks: Task[];
   taskInstances: TaskInstance[];
   onToggleMaintenance: (taskId: string) => void;
+  onEditTask?: (task: Task) => void;
   todayDateStr: string;
 }
 
@@ -15,6 +16,7 @@ export function MaintenanceSection({
   maintenanceTasks,
   taskInstances,
   onToggleMaintenance,
+  onEditTask,
   todayDateStr,
 }: MaintenanceSectionProps) {
   if (maintenanceTasks.length === 0) return null;
@@ -36,16 +38,18 @@ export function MaintenanceSection({
           return (
             <div
               key={task.id}
-              onClick={() => onToggleMaintenance(task.id)}
-              className={`cursor-pointer flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 active:scale-[0.99] ${
+              className={`group flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 ${
                 isDone
                   ? 'bg-slate-100/70 border-slate-200 text-slate-400'
                   : 'bg-white border-slate-200 hover:border-slate-300 text-slate-800 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div
+                onClick={() => onToggleMaintenance(task.id)}
+                className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
+              >
                 <div
-                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${
                     isDone
                       ? 'bg-slate-500 border-slate-500 text-white'
                       : 'border-slate-300 bg-white'
@@ -55,7 +59,7 @@ export function MaintenanceSection({
                 </div>
 
                 <span
-                  className={`text-xs font-medium ${
+                  className={`text-xs font-medium truncate ${
                     isDone ? 'line-through text-slate-400' : 'text-slate-700'
                   }`}
                 >
@@ -63,11 +67,27 @@ export function MaintenanceSection({
                 </span>
               </div>
 
-              {task.estimatedMinutes && (
-                <span className="text-[11px] font-medium text-slate-400">
-                  {task.estimatedMinutes} דק׳
-                </span>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {task.estimatedMinutes && (
+                  <span className="text-[11px] font-medium text-slate-400">
+                    {task.estimatedMinutes} דק׳
+                  </span>
+                )}
+
+                {onEditTask && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditTask(task);
+                    }}
+                    className="p-1 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
+                    title="ערוך משימה"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}

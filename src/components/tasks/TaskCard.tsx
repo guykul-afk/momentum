@@ -2,17 +2,18 @@
 
 import React from 'react';
 import { Task, Goal } from '@/types/models';
-import { Check, Clock, Target, MapPin, Calendar, CalendarPlus } from 'lucide-react';
+import { Check, Clock, Target, MapPin, Calendar, CalendarPlus, Edit2 } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
   isCompleted: boolean;
   onToggle: () => void;
   onPostponeToTomorrow?: () => void;
+  onEdit?: () => void;
   goal?: Goal;
 }
 
-export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, goal }: TaskCardProps) {
+export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, onEdit, goal }: TaskCardProps) {
   const getWeightBadgeColor = (weight: number = 3) => {
     if (weight >= 4) return 'bg-cyan-100 text-cyan-800 border-cyan-300';
     if (weight === 3) return 'bg-slate-100 text-slate-700 border-slate-200';
@@ -63,16 +64,30 @@ export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, go
             {task.title}
           </h4>
 
-          {/* Weight Badge */}
-          {task.weight && (
-            <span
-              className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${getWeightBadgeColor(
-                task.weight
-              )}`}
-            >
-              משקל {task.weight}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Weight Badge */}
+            {task.weight && (
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getWeightBadgeColor(
+                  task.weight
+                )}`}
+              >
+                משקל {task.weight}
+              </span>
+            )}
+
+            {/* Edit Button */}
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="p-1 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
+                title="ערוך משימה"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {task.description && (

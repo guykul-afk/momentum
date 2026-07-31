@@ -10,6 +10,7 @@ import {
   CalendarCheck,
   Filter,
   AlertTriangle,
+  CalendarDays,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Goal } from '@/types/models';
@@ -17,14 +18,14 @@ import { GoalTreeItem } from '@/components/goals/GoalTreeItem';
 import { GoalModal } from '@/components/goals/GoalModal';
 
 export default function GoalsPage() {
-  const { goals, addGoal, updateGoal, deleteGoal, addKrCheckin } = useAppStore();
+  const { goals, addGoal, updateGoal, deleteGoal } = useAppStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | undefined>(undefined);
-  const [modalDefaultTimeframe, setModalDefaultTimeframe] = useState<'annual' | 'monthly'>('annual');
+  const [modalDefaultTimeframe, setModalDefaultTimeframe] = useState<'annual' | 'quarterly' | 'monthly'>('quarterly');
   const [modalDefaultParentId, setModalDefaultParentId] = useState<string | undefined>(undefined);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
 
-  const [timeframeFilter, setTimeframeFilter] = useState<'all' | 'annual' | 'monthly'>('all');
+  const [timeframeFilter, setTimeframeFilter] = useState<'all' | 'annual' | 'quarterly' | 'monthly'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Filter goals based on selection
@@ -32,7 +33,7 @@ export default function GoalsPage() {
     .filter((g) => g.status === 'active')
     .map((g) => ({
       ...g,
-      timeframe: g.timeframe || (g.parentId ? ('monthly' as const) : ('annual' as const)),
+      timeframe: g.timeframe || (g.parentId ? ('quarterly' as const) : ('annual' as const)),
     }));
 
   const filteredGoals = activeGoals.filter((g) => {
@@ -42,20 +43,17 @@ export default function GoalsPage() {
   });
 
   // Root goals for the tree display:
-  // If timeframeFilter === 'monthly', show all filtered monthly goals.
-  // If timeframeFilter === 'annual', show all filtered annual goals.
-  // If timeframeFilter === 'all', show Annual goals or orphan goals without parents.
   const rootGoals = filteredGoals.filter((g) => {
-    if (timeframeFilter === 'monthly') return true;
+    if (timeframeFilter === 'monthly' || timeframeFilter === 'quarterly') return true;
     if (timeframeFilter === 'annual') return g.timeframe === 'annual';
     return !g.parentId || !activeGoals.some((parent) => parent.id === g.parentId);
   });
 
   // Statistics calculation
   const annualGoalsCount = activeGoals.filter((g) => g.timeframe === 'annual').length;
-  const monthlyGoalsCount = activeGoals.filter((g) => g.timeframe === 'monthly').length;
+  const quarterlyGoalsCount = activeGoals.filter((g) => g.timeframe === 'quarterly').length;
 
-  const handleOpenAddModal = (parentId?: string, timeframe: 'annual' | 'monthly' = 'annual') => {
+  const handleOpenAddModal = (parentId?: string, timeframe: 'annual' | 'quarterly' | 'monthly' = 'quarterly') => {
     setEditingGoal(undefined);
     setModalDefaultTimeframe(timeframe);
     setModalDefaultParentId(parentId);
@@ -64,7 +62,7 @@ export default function GoalsPage() {
 
   const handleOpenEditModal = (goal: Goal) => {
     setEditingGoal(goal);
-    setModalDefaultTimeframe(goal.timeframe || 'monthly');
+    setModalDefaultTimeframe(goal.timeframe || 'quarterly');
     setModalDefaultParentId(goal.parentId);
     setIsModalOpen(true);
   };
@@ -75,10 +73,6 @@ export default function GoalsPage() {
     } else {
       addGoal(goalData);
     }
-  };
-
-  const handleCheckinKr = (goalId: string, currentKr: number) => {
-    addKrCheckin(goalId, currentKr, 'עדכון מהיר מעץ היעדים');
   };
 
   const handleRequestDeleteGoal = (goal: Goal) => {
@@ -102,9 +96,9 @@ export default function GoalsPage() {
               <Target className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">עץ יעדים ו-KRs</h1>
+              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">עץ יעדים ו-KRs (OKR)</h1>
               <p className="text-xs text-slate-500 font-medium">
-                היררכיית יעדים רב-שנתית ומעקב מדדי תוצאה (KRs)
+                היררכיית יעדים רבעוניים/שנתיים ומעקב מדדי תוצאה (Key Results)
               </p>
             </div>
           </div>
@@ -112,11 +106,11 @@ export default function GoalsPage() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleOpenAddModal(undefined, 'annual')}
+            onClick={() => handleOpenAddModal(undefined, 'quarterly')}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>יעד חדש</span>
+            <span>יעד חדש (Objective)</span>
           </button>
         </div>
       </div>
@@ -144,7 +138,7 @@ export default function GoalsPage() {
             <CalendarCheck className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-xs font-extrabold text-slate-800">סיכום חודשי</div>
+            <div className="text-xs font-extrabold text-slate-800">סיכום חודשי/רבעוני</div>
             <div className="text-[10px] text-slate-500">עדכון KRs ודוח AI</div>
           </div>
         </Link>
@@ -161,22 +155,22 @@ export default function GoalsPage() {
           <div className="text-[10px] text-slate-400">פעילים במערכת</div>
         </div>
 
+        <div className="bg-purple-50/70 p-3 rounded-2xl border border-purple-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-purple-700 mb-1">
+            <span className="text-[11px] font-semibold text-purple-800">יעדים רבעוניים</span>
+            <CalendarDays className="w-4 h-4 text-purple-600" />
+          </div>
+          <div className="text-xl font-black text-purple-900">{quarterlyGoalsCount}</div>
+          <div className="text-[10px] text-purple-700/80 font-medium">הליבה של מתודולוגיית OKR</div>
+        </div>
+
         <div className="bg-cyan-50/70 p-3 rounded-2xl border border-cyan-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-cyan-700 mb-1">
             <span className="text-[11px] font-semibold text-cyan-800">יעדים שנתיים</span>
             <Target className="w-4 h-4 text-cyan-600" />
           </div>
           <div className="text-xl font-black text-cyan-900">{annualGoalsCount}</div>
-          <div className="text-[10px] text-cyan-700/80 font-medium">עד סוף השנה הקלנדרית</div>
-        </div>
-
-        <div className="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-indigo-700 mb-1">
-            <span className="text-[11px] font-semibold text-indigo-800">יעדים חודשיים</span>
-            <CalendarCheck className="w-4 h-4 text-indigo-600" />
-          </div>
-          <div className="text-xl font-black text-indigo-900">{monthlyGoalsCount}</div>
-          <div className="text-[10px] text-indigo-700/80 font-medium">יעדים חודשיים מקושרים</div>
+          <div className="text-[10px] text-cyan-700/80 font-medium">יעדי אב אסטרטגיים</div>
         </div>
       </div>
 
@@ -187,6 +181,7 @@ export default function GoalsPage() {
             [
               { id: 'all', label: 'הכל' },
               { id: 'annual', label: 'שנתי' },
+              { id: 'quarterly', label: 'רבעוני' },
               { id: 'monthly', label: 'חודשי' },
             ] as const
           ).map((t) => (
@@ -226,10 +221,10 @@ export default function GoalsPage() {
           <Target className="w-10 h-10 text-slate-300 mx-auto mb-2" />
           <h3 className="text-sm font-bold text-slate-700">לא נמצאו יעדים במערכת</h3>
           <p className="text-xs text-slate-400 mt-1 mb-4">
-            הגדר את היעדים השנתיים והחודשיים שלך כדי להתחיל למדוד מומנטום
+            הגדר את היעדים הרבעוניים והשנתיים שלך כדי להתחיל למדוד מומנטום בשיטת OKR
           </p>
           <button
-            onClick={() => handleOpenAddModal(undefined, 'annual')}
+            onClick={() => handleOpenAddModal(undefined, 'quarterly')}
             className="px-4 py-2 bg-cyan-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-cyan-700 transition-colors"
           >
             צור יעד ראשון
@@ -248,7 +243,6 @@ export default function GoalsPage() {
                 onAddSubGoal={(parentId, timeframe) => handleOpenAddModal(parentId, timeframe)}
                 onEditGoal={handleOpenEditModal}
                 onDeleteGoal={handleRequestDeleteGoal}
-                onCheckinKr={handleCheckinKr}
                 level={0}
               />
             );
@@ -289,7 +283,7 @@ export default function GoalsPage() {
               <p className="text-xs font-semibold text-slate-700">{deletingGoal.title}</p>
               {goals.some((g) => g.parentId === deletingGoal.id) && (
                 <p className="text-[11px] text-rose-600 font-medium mt-1">
-                  ⚠️ שים לב: מחיקת יעד זה תביא למחיקת תתי-היעדים שתחתיו!
+                  ⚠️ שים לב: מחיקת יעד זה תביא למחיקת תתי-היעדים והמדדים (KRs) שתחתיו!
                 </p>
               )}
             </div>

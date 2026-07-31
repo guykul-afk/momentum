@@ -6,12 +6,16 @@ import { DailyQuotaRing } from '@/components/tasks/DailyQuotaRing';
 import { AdherenceSparkline } from '@/components/tasks/AdherenceSparkline';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { MaintenanceSection } from '@/components/tasks/MaintenanceSection';
+import { HabitSection } from '@/components/tasks/HabitSection';
+import { EditTaskModal } from '@/components/tasks/EditTaskModal';
 import { computeDailyQuota } from '@/lib/metrics';
 import { Calendar, Sparkles, CheckCircle2, ListTodo } from 'lucide-react';
+import { Task } from '@/types/models';
 
 export default function TodayPage() {
   const { tasks, taskInstances, dailyStats, goals, toggleTaskInstance, postponeTaskToTomorrow } = useAppStore();
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -25,6 +29,7 @@ export default function TodayPage() {
   // Filter tasks by categories
   const dailyTasks = tasks.filter((t) => t.type === 'daily' && !t.isHabit && !t.isMaintenance && t.isActive);
   const maintenanceTasks = tasks.filter((t) => t.isMaintenance && t.isActive);
+  const habitTasks = tasks.filter((t) => t.isHabit && t.isActive);
 
   // Daily quota calculation using lib metrics
   const dailyQuotaCount = computeDailyQuota(tasks);
@@ -53,7 +58,7 @@ export default function TodayPage() {
             <Calendar className="w-3.5 h-3.5" />
             <span suppressHydrationWarning>{todayFormatted}</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">היום שלי (v14)</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">היום שלי</h1>
         </div>
         <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-600 font-bold text-sm">
           <Sparkles className="w-5 h-5" />
@@ -78,6 +83,19 @@ export default function TodayPage() {
           <AdherenceSparkline stats={dailyStats} />
         </div>
       </section>
+
+      {/* Habits Section */}
+      {habitTasks.length > 0 && (
+        <section>
+          <HabitSection
+            habits={habitTasks}
+            taskInstances={taskInstances}
+            onToggleHabit={toggleTaskInstance}
+            onEditHabit={(task) => setEditingTask(task)}
+            todayDateStr={todayStr}
+          />
+        </section>
+      )}
 
       {/* Today's Tasks Section */}
       <section className="space-y-3">
@@ -146,6 +164,7 @@ export default function TodayPage() {
                   isCompleted={isCompleted}
                   onToggle={() => toggleTaskInstance(task.id)}
                   onPostponeToTomorrow={() => postponeTaskToTomorrow(task.id)}
+                  onEdit={() => setEditingTask(task)}
                   goal={goal}
                 />
               );
@@ -160,9 +179,17 @@ export default function TodayPage() {
           maintenanceTasks={maintenanceTasks}
           taskInstances={taskInstances}
           onToggleMaintenance={toggleTaskInstance}
+          onEditTask={(task) => setEditingTask(task)}
           todayDateStr={todayStr}
         />
       </section>
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        isOpen={!!editingTask}
+        task={editingTask}
+        onClose={() => setEditingTask(null)}
+      />
     </div>
   );
 }

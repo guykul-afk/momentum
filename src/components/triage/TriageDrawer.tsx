@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Sun,
   Sunrise,
+  CheckCircle,
 } from 'lucide-react';
 
 interface TriageDrawerProps {
@@ -23,12 +24,13 @@ interface TriageDrawerProps {
 }
 
 export function TriageDrawer({ item, isOpen, onClose }: TriageDrawerProps) {
-  const { triageApprove, deleteRawCapture, goals } = useAppStore();
+  const { triageApprove, deleteRawCapture, goals, keyResults } = useAppStore();
 
   const [title, setTitle] = useState('');
   const [weight, setWeight] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [estimatedMinutes, setEstimatedMinutes] = useState(30);
   const [goalId, setGoalId] = useState<string>('');
+  const [keyResultId, setKeyResultId] = useState<string>('');
   const [targetDate, setTargetDate] = useState<'today' | 'tomorrow'>('today');
   const [category, setCategory] = useState<
     'work' | 'personal' | 'health' | 'maintenance' | 'habit'
@@ -45,6 +47,7 @@ export function TriageDrawer({ item, isOpen, onClose }: TriageDrawerProps) {
     setWeight((breakdown?.weight as 1 | 2 | 3 | 4 | 5) || 3);
     setEstimatedMinutes(breakdown?.estimatedMinutes || 30);
     setGoalId(breakdown?.goalId || '');
+    setKeyResultId(breakdown?.keyResultId || '');
     setCategory(breakdown?.category || 'work');
     setTaskType(breakdown?.type || 'daily');
     setWhen(breakdown?.when || '');
@@ -54,9 +57,7 @@ export function TriageDrawer({ item, isOpen, onClose }: TriageDrawerProps) {
 
   if (!isOpen || !item) return null;
 
-  // Group goals for selector: filter monthly goals first
-  const monthlyGoals = goals.filter((g) => g.timeframe === 'monthly' && g.status === 'active');
-  const otherGoals = goals.filter((g) => g.timeframe !== 'monthly' && g.status === 'active');
+  const availableKrs = goalId ? keyResults.filter((kr) => kr.goalId === goalId) : [];
 
   const handleApprove = () => {
     const taskData: Partial<Task> = {
@@ -66,6 +67,7 @@ export function TriageDrawer({ item, isOpen, onClose }: TriageDrawerProps) {
       category,
       type: taskType,
       goalId: goalId || undefined,
+      keyResultId: keyResultId || undefined,
       when: when || undefined,
       where: where || undefined,
       isHabit: category === 'habit',
@@ -184,40 +186,48 @@ export function TriageDrawer({ item, isOpen, onClose }: TriageDrawerProps) {
           </div>
         </div>
 
-        {/* 2. Connection to Monthly Goal */}
-        <div className="space-y-1.5">
+        {/* 2. Connection to Goal & Key Result */}
+        <div className="space-y-2">
           <label className="text-xs font-extrabold text-slate-700 block">
-            2. קשר ליעד חודשי (Monthly Goal):
+            2. שיוך ליעד אב ומדד תוצאה (OKR):
           </label>
-          <div className="relative">
-            <select
-              value={goalId}
-              onChange={(e) => setGoalId(e.target.value)}
-              className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all shadow-xs pr-8"
-            >
-              <option value="">ללא קשר ליעד (משימה עצמאית)</option>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="relative">
+              <select
+                value={goalId}
+                onChange={(e) => {
+                  setGoalId(e.target.value);
+                  setKeyResultId('');
+                }}
+                className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all shadow-xs pr-8"
+              >
+                <option value="">ללא קשר ליעד (משימה עצמאית)</option>
+                {goals.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.title} ({g.timeframe})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
-              {monthlyGoals.length > 0 && (
-                <optgroup label="🎯 יעדים חודשיים">
-                  {monthlyGoals.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.title}
+            {goalId && (
+              <div className="relative">
+                <select
+                  value={keyResultId}
+                  onChange={(e) => setKeyResultId(e.target.value)}
+                  className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-xs pr-8"
+                >
+                  <option value="">-- בחר מדד KR --</option>
+                  {availableKrs.map((kr) => (
+                    <option key={kr.id} value={kr.id}>
+                      {kr.title}
                     </option>
                   ))}
-                </optgroup>
-              )}
-
-              {otherGoals.length > 0 && (
-                <optgroup label="📌 יעדים נוספים">
-                  {otherGoals.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.title} ({g.timeframe})
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            )}
           </div>
         </div>
 

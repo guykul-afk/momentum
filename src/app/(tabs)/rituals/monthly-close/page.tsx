@@ -16,17 +16,15 @@ import { useAppStore } from '@/lib/store';
 import { MonthlyCloseReport, KrCheckin } from '@/types/models';
 
 export default function MonthlyCloseRitualPage() {
-  const { goals, addKrCheckin, saveMonthlyCloseReport } = useAppStore();
+  const { goals, keyResults, addKrCheckin, saveMonthlyCloseReport } = useAppStore();
 
-  const monthlyAndAnnualGoals = goals.filter(
-    (g) => g.status === 'active' && (g.timeframe === 'monthly' || g.timeframe === 'annual')
-  );
+  const activeGoals = goals.filter((g) => g.status === 'active');
 
   // KR Values State for manual check-ins
   const [krValues, setKrValues] = useState<Record<string, number>>(() => {
     const map: Record<string, number> = {};
-    monthlyAndAnnualGoals.forEach((g) => {
-      map[g.id] = g.krCurrent || 0;
+    keyResults.forEach((kr) => {
+      map[kr.id] = kr.current || 0;
     });
     return map;
   });
@@ -36,17 +34,17 @@ export default function MonthlyCloseRitualPage() {
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleValueChange = (goalId: string, val: number) => {
+  const handleValueChange = (krId: string, val: number) => {
     setKrValues((prev) => ({
       ...prev,
-      [goalId]: val,
+      [krId]: val,
     }));
   };
 
-  const handleNotesChange = (goalId: string, text: string) => {
+  const handleNotesChange = (krId: string, text: string) => {
     setNotes((prev) => ({
       ...prev,
-      [goalId]: text,
+      [krId]: text,
     }));
   };
 
@@ -54,13 +52,13 @@ export default function MonthlyCloseRitualPage() {
     setIsGeneratingAi(true);
 
     setTimeout(() => {
-      const highRoi = monthlyAndAnnualGoals
-        .filter((g) => {
-          const krTarget = g.krTarget || 1;
-          const krPct = (krValues[g.id] || 0) / krTarget;
+      const highRoi = keyResults
+        .filter((kr) => {
+          const krTarget = kr.target || 1;
+          const krPct = (krValues[kr.id] ?? kr.current) / krTarget;
           return krPct >= 0.5;
         })
-        .map((g) => g.title);
+        .map((kr) => kr.title);
 
       const report: MonthlyCloseReport['aiAnalysis'] = {
         summary: 'ניתוח סיכום חודשי: מעקב חודשי פעיל והתקדמות במדדי היעדים וה-KR.',
@@ -70,7 +68,7 @@ export default function MonthlyCloseRitualPage() {
         strategicAdvice: [
           'המשך להתמיד בעדכון בדיקות KR שבועי וחודשי.',
           'יעדי הבריאות והכושר הראו התקדמות יציבה - מומלץ לשמר את התדירות השבועית.',
-          'וודא קישור כל משימה שבועית ליעד חודשי ברור.',
+          'וודא קישור כל משימה שבועית ליעד רבעוני/חודשי ברור.',
         ],
       };
 
@@ -82,15 +80,17 @@ export default function MonthlyCloseRitualPage() {
   const handleSubmitMonthlyClose = () => {
     // 1. Submit all KR check-ins
     const checkinList: KrCheckin[] = [];
-    monthlyAndAnnualGoals.forEach((g) => {
-      const val = krValues[g.id] ?? (g.krCurrent || 0);
-      const note = notes[g.id] || 'עדכון סיכום חודשי';
-      addKrCheckin(g.id, val, note);
+    keyResults.forEach((kr) => {
+      const val = krValues[kr.id] ?? kr.current;
+      const note = notes[kr.id] || 'עדכון סיכום חודשי';
+      addKrCheckin(kr.goalId, kr.id, val, kr.confidenceScore || 7, note);
       checkinList.push({
-        id: `kr-${Date.now()}-${g.id}`,
+        id: `kr-${Date.now()}-${kr.id}`,
         uid: 'user-1',
-        goalId: g.id,
+        goalId: kr.goalId,
+        keyResultId: kr.id,
         value: val,
+        confidenceScore: kr.confidenceScore || 7,
         notes: note,
         date: new Date().toISOString().split('T')[0],
         createdAt: Date.now(),
@@ -128,9 +128,9 @@ export default function MonthlyCloseRitualPage() {
             </Link>
             <div>
               <span className="text-[11px] font-bold text-teal-600 tracking-wide uppercase">
-                ריטואל חודשי
+                ריטואל חודשי/רבעוני
               </span>
-              <h1 className="text-xl font-extrabold text-slate-900">סיכום חודשי וסגירת KRs</h1>
+              <h1 className="text-xl font-extrabold text-slate-900">סיכום וסגירת KRs</h1>
             </div>
           </div>
 
@@ -147,75 +147,77 @@ export default function MonthlyCloseRitualPage() {
               <span>עדכון ידני של מדדי תוצאה (KR Check-in)</span>
             </h2>
             <p className="text-xs text-slate-500">
-              הזן את הביצוע בפועל עבור כל יעד חודשי ושנתי לסגירת החודש
+              הזן את הביצוע בפועל עבור כל תוצאת מפתח לסגירת המחזור
             </p>
           </div>
 
           <div className="space-y-4">
-            {monthlyAndAnnualGoals.map((g) => {
-              const currentValue = krValues[g.id] ?? (g.krCurrent || 0);
-              const target = g.krTarget || 100;
-              const pct = Math.min(100, Math.round((currentValue / target) * 100));
+            {activeGoals.map((g) => {
+              const goalKrs = keyResults.filter((kr) => kr.goalId === g.id);
+              if (goalKrs.length === 0) return null;
 
               return (
-                <div
-                  key={g.id}
-                  className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-white border border-slate-200 text-slate-600">
-                          {g.timeframe === 'annual' ? 'שנתי' : 'חודשי'}
-                        </span>
-                        <h3 className="font-bold text-xs text-slate-800">{g.title}</h3>
-                      </div>
-                      {g.krTitle && (
-                        <p className="text-[11px] text-slate-500 mt-0.5">מדד: {g.krTitle}</p>
-                      )}
-                    </div>
-
-                    <span className="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-1 rounded-xl shrink-0">
-                      {pct}% הושלמו
+                <div key={g.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-3">
+                  <div className="flex items-center gap-2 border-b border-slate-200/60 pb-2">
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-white border border-slate-200 text-slate-600">
+                      {g.timeframe === 'annual' ? 'שנתי' : g.timeframe === 'quarterly' ? 'רבעוני' : 'חודשי'}
                     </span>
+                    <h3 className="font-bold text-xs text-slate-800">{g.title}</h3>
                   </div>
 
-                  {/* Range & Value Input */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-                    <div className="sm:col-span-2 flex items-center gap-3">
-                      <input
-                        type="range"
-                        min={0}
-                        max={target * 1.2}
-                        value={currentValue}
-                        onChange={(e) => handleValueChange(g.id, Number(e.target.value))}
-                        className="w-full accent-teal-600 cursor-pointer"
-                      />
-                    </div>
+                  <div className="space-y-3 pt-1">
+                    {goalKrs.map((kr) => {
+                      const currentValue = krValues[kr.id] ?? kr.current;
+                      const target = kr.target || 100;
+                      const pct = Math.min(100, Math.round((currentValue / target) * 100));
 
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <span className="text-[11px] text-slate-500">ערך:</span>
-                      <input
-                        type="number"
-                        value={currentValue}
-                        onChange={(e) => handleValueChange(g.id, Number(e.target.value))}
-                        className="w-20 text-center text-xs font-bold bg-white border border-slate-300 rounded-xl py-1 text-slate-800"
-                      />
-                      <span className="text-[11px] font-semibold text-slate-500">
-                        / {target} {g.krUnit || '%'}
-                      </span>
-                    </div>
-                  </div>
+                      return (
+                        <div key={kr.id} className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-semibold text-xs text-slate-800">{kr.title}</span>
+                            <span className="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-lg shrink-0">
+                              {pct}%
+                            </span>
+                          </div>
 
-                  {/* Notes input */}
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="הערות התקדמות או תובנות חודשיות..."
-                      value={notes[g.id] || ''}
-                      onChange={(e) => handleNotesChange(g.id, e.target.value)}
-                      className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 placeholder:text-slate-400"
-                    />
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                            <div className="sm:col-span-2 flex items-center gap-3">
+                              <input
+                                type="range"
+                                min={0}
+                                max={target * 1.2}
+                                value={currentValue}
+                                onChange={(e) => handleValueChange(kr.id, Number(e.target.value))}
+                                className="w-full accent-teal-600 cursor-pointer"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <span className="text-[11px] text-slate-500">ערך:</span>
+                              <input
+                                type="number"
+                                value={currentValue}
+                                onChange={(e) => handleValueChange(kr.id, Number(e.target.value))}
+                                className="w-20 text-center text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl py-1 text-slate-800"
+                              />
+                              <span className="text-[11px] font-semibold text-slate-500">
+                                / {target} {kr.unit || '%'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <input
+                              type="text"
+                              placeholder="הערות התקדמות או תובנות..."
+                              value={notes[kr.id] || ''}
+                              onChange={(e) => handleNotesChange(kr.id, e.target.value)}
+                              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 placeholder:text-slate-400"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -278,7 +280,7 @@ export default function MonthlyCloseRitualPage() {
                 <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/30 space-y-1">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300">
                     <Award className="w-3.5 h-3.5" />
-                    <span>יעדים בעלי ROI גבוה:</span>
+                    <span>מדדים בעלי ביצועים גבוהים:</span>
                   </div>
                   <ul className="text-[11px] text-emerald-200/90 space-y-0.5">
                     {aiReport.highRoiGoals.map((g, i) => (
@@ -290,7 +292,7 @@ export default function MonthlyCloseRitualPage() {
                 <div className="p-3 rounded-xl bg-amber-950/60 border border-amber-500/30 space-y-1">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>יעדים רעבים (Starved Goals):</span>
+                    <span>מדדים המצריכים תגבור:</span>
                   </div>
                   <ul className="text-[11px] text-amber-200/90 space-y-0.5">
                     {aiReport.starvedGoals.map((g, i) => (
@@ -303,7 +305,7 @@ export default function MonthlyCloseRitualPage() {
               {/* Strategic Advice */}
               <div className="pt-2 border-t border-slate-800 space-y-1">
                 <span className="text-[11px] font-bold text-slate-400">
-                  המלצות אסטרטגיות לחודש הבא:
+                  המלצות אסטרטגיות למחזור הבא:
                 </span>
                 <ul className="space-y-1 text-xs text-slate-300">
                   {aiReport.strategicAdvice.map((advice, i) => (
@@ -325,12 +327,12 @@ export default function MonthlyCloseRitualPage() {
             className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-sm rounded-2xl shadow-md transition-colors flex items-center justify-center gap-2"
           >
             <Save className="w-5 h-5" />
-            <span>שמור KRs וסגור ריטואל חודשי</span>
+            <span>שמור KRs וסגור ריטואל</span>
           </button>
 
           {isSubmitted && (
             <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-semibold text-center border border-emerald-200 animate-in fade-in">
-              הסיכום החודשי נשמר בהצלחה! עדכוני ה-KR והדוח נשמרו במערכת.
+              הסיכום נשמר בהצלחה! עדכוני ה-KR והדוח נשמרו במערכת.
             </div>
           )}
         </div>

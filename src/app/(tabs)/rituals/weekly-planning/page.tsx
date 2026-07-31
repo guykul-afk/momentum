@@ -16,7 +16,7 @@ import { useAppStore } from '@/lib/store';
 import { WeeklyPlan } from '@/types/models';
 
 export default function WeeklyPlanningRitualPage() {
-  const { goals, saveWeeklyPlan, performFreshStart } = useAppStore();
+  const { goals, keyResults, saveWeeklyPlan, performFreshStart } = useAppStore();
 
   const activeGoals = goals.filter((g) => g.status === 'active');
 
@@ -206,6 +206,8 @@ export default function WeeklyPlanningRitualPage() {
 
             {activeGoals.map((g) => {
               const allocated = allocations[g.id] || 0;
+              const goalKrs = keyResults.filter((kr) => kr.goalId === g.id);
+
               return (
                 <div
                   key={g.id}
@@ -214,12 +216,14 @@ export default function WeeklyPlanningRitualPage() {
                   <div className="space-y-0.5 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-white border border-slate-200 text-slate-600">
-                        {g.timeframe === 'annual' ? 'שנתי' : g.timeframe === 'monthly' ? 'חודשי' : 'שבועי'}
+                        {g.timeframe === 'annual' ? 'שנתי' : g.timeframe === 'quarterly' ? 'רבעוני' : 'חודשי'}
                       </span>
                       <h5 className="font-bold text-xs text-slate-800 truncate">{g.title}</h5>
                     </div>
-                    {g.krTitle && (
-                      <p className="text-[11px] text-slate-500 truncate">KR: {g.krTitle}</p>
+                    {goalKrs.length > 0 && (
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {goalKrs.length} מדדי KR מוגדרים ({goalKrs.map((k) => k.title).join(', ')})
+                      </p>
                     )}
                   </div>
 
