@@ -13,7 +13,7 @@ import { Calendar, Sparkles, CheckCircle2, ListTodo } from 'lucide-react';
 import { Task } from '@/types/models';
 
 export default function TodayPage() {
-  const { tasks, taskInstances, dailyStats, goals, toggleTaskInstance, postponeTaskToTomorrow } = useAppStore();
+  const { tasks, taskInstances, dailyStats, goals, toggleTaskInstance, postponeTaskToTomorrow, deleteTask } = useAppStore();
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -165,6 +165,7 @@ export default function TodayPage() {
                   onToggle={() => toggleTaskInstance(task.id)}
                   onPostponeToTomorrow={() => postponeTaskToTomorrow(task.id)}
                   onEdit={() => setEditingTask(task)}
+                  onDelete={() => deleteTask(task.id)}
                   goal={goal}
                 />
               );

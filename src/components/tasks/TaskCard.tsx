@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Task, Goal } from '@/types/models';
-import { Check, Clock, Target, MapPin, Calendar, CalendarPlus, Edit2 } from 'lucide-react';
+import { Check, Clock, Target, MapPin, Calendar, CalendarPlus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -10,10 +10,13 @@ interface TaskCardProps {
   onToggle: () => void;
   onPostponeToTomorrow?: () => void;
   onEdit?: () => void;
+  onDelete?: () => void;
   goal?: Goal;
 }
 
-export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, onEdit, goal }: TaskCardProps) {
+export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, onEdit, onDelete, goal }: TaskCardProps) {
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
   const getWeightBadgeColor = (weight: number = 3) => {
     if (weight >= 4) return 'bg-cyan-100 text-cyan-800 border-cyan-300';
     if (weight === 3) return 'bg-slate-100 text-slate-700 border-slate-200';
@@ -64,7 +67,7 @@ export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, on
             {task.title}
           </h4>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {/* Weight Badge */}
             {task.weight && (
               <span
@@ -85,6 +88,18 @@ export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, on
                 title="ערוך משימה"
               >
                 <Edit2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Delete Button */}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => setShowConfirmDelete(true)}
+                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
+                title="מחק משימה"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -160,6 +175,42 @@ export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, on
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-xs w-full shadow-2xl border border-slate-100 p-4 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150 dir-rtl text-right">
+            <div className="flex items-center gap-2.5 text-rose-600 font-bold text-sm">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <span>אישור מחיקת משימה</span>
+            </div>
+
+            <p className="text-xs text-slate-600 font-medium">
+              האם למחוק את המשימה <strong className="text-slate-800 font-bold">&quot;{task.title}&quot;</strong> לצמיתות?
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowConfirmDelete(false)}
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDelete) onDelete();
+                  setShowConfirmDelete(false);
+                }}
+                className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors"
+              >
+                מחק לצמיתות
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
