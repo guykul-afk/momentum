@@ -393,7 +393,7 @@ export function QuickAddModal({ isOpen, onClose, defaultTab = 'goal' }: QuickAdd
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="sticky bottom-0 bg-white pt-3 pb-1 border-t border-slate-100 flex items-center justify-end gap-2 mt-auto">
               <button
                 type="button"
                 onClick={onClose}

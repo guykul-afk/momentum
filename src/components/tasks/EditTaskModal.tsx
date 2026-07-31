@@ -300,8 +300,8 @@ export function EditTaskModal({ isOpen, task, onClose }: EditTaskModalProps) {
             </label>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+          {/* Action Buttons - Sticky at bottom of modal */}
+          <div className="sticky bottom-0 bg-white pt-3 pb-1 border-t border-slate-100 flex items-center justify-between mt-auto">
             {showConfirmDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-rose-600">למחוק משימה?</span>
