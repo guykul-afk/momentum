@@ -3,37 +3,32 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CalendarCheck, Inbox, Moon, Target, TrendingUp } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
-
-import { Plus } from 'lucide-react';
+import { CalendarCheck, Target, TrendingUp, Plus } from 'lucide-react';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { QuickAddModal } from '@/components/QuickAddModal';
 
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: number;
+}
+
 export default function TabsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { rawCaptures } = useAppStore();
   const [isQuickAddOpen, setIsQuickAddOpen] = React.useState(false);
   const [quickAddDefaultTab, setQuickAddDefaultTab] = React.useState<'goal' | 'task'>('goal');
-
-  const pendingInboxCount = rawCaptures.filter((c) => c.status === 'inbox').length;
 
   const openQuickAdd = (tab: 'goal' | 'task') => {
     setQuickAddDefaultTab(tab);
     setIsQuickAddOpen(true);
   };
 
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       href: '/today',
       label: 'היום',
       icon: CalendarCheck,
-    },
-    {
-      href: '/inbox',
-      label: 'אינבוקס',
-      icon: Inbox,
-      badge: pendingInboxCount > 0 ? pendingInboxCount : undefined,
     },
     {
       href: '/goals',
@@ -44,11 +39,6 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       href: '/stats',
       label: 'דוחות',
       icon: TrendingUp,
-    },
-    {
-      href: '/rituals/end-of-day',
-      label: 'סיכום יום',
-      icon: Moon,
     },
   ];
 
