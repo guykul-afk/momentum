@@ -139,10 +139,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initAuth();
 
-    let isReset = false;
     try {
-      isReset = !!localStorage.getItem('momentum_reset_v5');
-      if (!isReset) {
+      const hasResetFlag = !!localStorage.getItem('momentum_reset_v5');
+      if (!hasResetFlag) {
         localStorage.clear();
         localStorage.setItem('momentum_reset_v5', 'true');
       } else {
@@ -178,11 +177,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubGoals = onSnapshot(
       collection(db, 'goals'),
       (snapshot) => {
-        if (!isReset) {
-          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
-          setGoals([]);
-          return;
-        }
         const serverItems = snapshot.docs.map((d) => d.data() as Goal);
         setGoals((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
@@ -206,11 +200,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubKeyResults = onSnapshot(
       collection(db, 'keyResults'),
       (snapshot) => {
-        if (!isReset) {
-          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
-          setKeyResults([]);
-          return;
-        }
         const serverItems = snapshot.docs.map((d) => d.data() as KeyResult);
         setKeyResults((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
@@ -234,11 +223,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubTasks = onSnapshot(
       collection(db, 'tasks'),
       (snapshot) => {
-        if (!isReset) {
-          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
-          setTasks([]);
-          return;
-        }
         const serverItems = snapshot.docs.map((d) => d.data() as Task);
         setTasks((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
@@ -262,11 +246,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubInstances = onSnapshot(
       collection(db, 'taskInstances'),
       (snapshot) => {
-        if (!isReset) {
-          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
-          setTaskInstances([]);
-          return;
-        }
         const serverItems = snapshot.docs.map((d) => d.data() as TaskInstance);
         setTaskInstances((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
@@ -290,11 +269,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubCaptures = onSnapshot(
       collection(db, 'rawCaptures'),
       (snapshot) => {
-        if (!isReset) {
-          snapshot.docs.forEach((d) => deleteDoc(d.ref).catch(() => {}));
-          setRawCaptures([]);
-          return;
-        }
         const serverItems = snapshot.docs.map((d) => d.data() as RawCaptureItem);
         setRawCaptures((prevLocal) => {
           const serverMap = new Map(serverItems.map((item) => [item.id, item]));
