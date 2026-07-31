@@ -224,16 +224,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       collection(db, 'tasks'),
       (snapshot) => {
         const serverItems = snapshot.docs.map((d) => d.data() as Task);
-        setTasks((prevLocal) => {
-          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
-          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
-          unsynced.forEach((item) => {
-            safeSetDoc(doc(db, 'tasks', item.id), item).catch((err) =>
-              console.warn('Failed auto-syncing local task to Firestore:', err)
-            );
-          });
-          return [...serverItems, ...unsynced];
-        });
+        setTasks(serverItems);
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
