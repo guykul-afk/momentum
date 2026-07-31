@@ -22,7 +22,6 @@ export default function StatsPage() {
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  // Generate data points (if real stats exist or mock padding for longer windows)
   const lineChartData: AdherenceDataPoint[] = [];
 
   if (timeframeDays === 7) {
@@ -35,7 +34,6 @@ export default function StatsPage() {
       });
     });
   } else {
-    // For 30, 90, 365, generate historical curve points derived from base adherence
     const baseAdherence = computeRollingAdherence(dailyStats, 7);
     const count = timeframeDays === 30 ? 10 : timeframeDays === 90 ? 12 : 12;
     for (let i = count - 1; i >= 0; i--) {
@@ -51,33 +49,31 @@ export default function StatsPage() {
     }
   }
 
-  // 2. Active goals count
+  // 2. Active goals count & completed instances
   const activeGoals = goals.filter((g) => g.status === 'active');
-
-  // 3. Compute Focus Ratio Pie Chart Data
   const completedInstances = taskInstances.filter((i) => i.status === 'completed');
   const focusRatio = computeFocusRatio(tasks, completedInstances);
 
-  // Group tasks by category
-  let focusCount = 0;
-  let healthCount = 0;
-  let maintenanceCount = 0;
+  // 3. Compute Goal Tasks Distribution Pie Chart Data (Goal Breakdown Pie Chart)
+  const goalColors = ['#06b6d4', '#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6'];
+  const unassignedTasksCount = tasks.filter((t) => !t.goalId).length;
 
-  const taskMap = new Map(tasks.map((t) => [t.id, t]));
-  completedInstances.forEach((inst) => {
-    const task = taskMap.get(inst.taskId);
-    if (task) {
-      if (task.goalId) focusCount++;
-      else if (task.category === 'health' || task.isHabit) healthCount++;
-      else maintenanceCount++;
-    }
+  const goalPieChartData: FocusRatioCategoryData[] = goals.map((goal, idx) => {
+    const goalTaskCount = tasks.filter((t) => t.goalId === goal.id).length;
+    return {
+      name: goal.title,
+      value: goalTaskCount,
+      color: goalColors[idx % goalColors.length],
+    };
   });
 
-  const pieChartData: FocusRatioCategoryData[] = [
-    { name: 'פוקוס יעדים אסטרטגיים', value: Math.max(1, focusCount), color: '#06b6d4' },
-    { name: 'הרגלים ובריאות', value: Math.max(1, healthCount), color: '#10b981' },
-    { name: 'תפעול ושוטף (Maintenance)', value: Math.max(1, maintenanceCount), color: '#64748b' },
-  ];
+  if (unassignedTasksCount > 0 || goals.length === 0) {
+    goalPieChartData.push({
+      name: 'משימות ללא שיוך ליעד',
+      value: unassignedTasksCount,
+      color: '#94a3b8',
+    });
+  }
 
   const overallAdherencePct = Math.round(computeRollingAdherence(dailyStats, timeframeDays) * 100);
 
@@ -92,7 +88,7 @@ export default function StatsPage() {
           <div>
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">דוחות וסטטיסטיקת מומנטום</h1>
             <p className="text-xs text-slate-500 font-medium">
-              ניתוח מגמות היענות, יחס פוקוס והתקדמות יעדים
+              ניתוח מגמות היענות, התפלגות משימות ליעדים והתקדמות
             </p>
           </div>
         </div>
@@ -128,7 +124,7 @@ export default function StatsPage() {
 
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs">
           <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[11px] font-semibold text-slate-600">יחס פוקוס (Focus Ratio)</span>
+            <span className="text-[11px] font-semibold text-slate-600">יחס פוקוס יעדים</span>
             <PieIcon className="w-4 h-4 text-teal-500" />
           </div>
           <div className="text-2xl font-black text-slate-800">{Math.round(focusRatio * 100)}%</div>
@@ -173,21 +169,21 @@ export default function StatsPage() {
         <AdherenceLineChart data={lineChartData} timeframeDays={timeframeDays} />
       </div>
 
-      {/* Chart 3: Focus Ratio Pie Chart */}
+      {/* Chart 2: Goal Tasks Allocation Pie Chart (Circular Distribution Chart) */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-teal-50 text-teal-600">
             <PieIcon className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-800">יחס פוקוס (Focus Ratio Breakdown)</h2>
+            <h2 className="text-sm font-bold text-slate-800">גרף עגול: התפלגות משימות בין היעדים</h2>
             <p className="text-[11px] text-slate-400">
-              חלוקת תפוקה בין משימות מונחות יעדים, הרגלים, ותחזוקה שוטפת
+              מציג את היחס והאחוז העגול של המשימות המשויכות לכל אחד מהיעדים במערכת
             </p>
           </div>
         </div>
 
-        <FocusRatioPieChart data={pieChartData} />
+        <FocusRatioPieChart data={goalPieChartData} />
       </div>
 
       {/* Goal Tasks Allocation & Completion Breakdown */}
@@ -223,7 +219,6 @@ export default function StatsPage() {
               const goalTaskIds = new Set(goalTasks.map((t) => t.id));
               const goalCompletedInstances = completedInstances.filter((inst) => goalTaskIds.has(inst.taskId));
               
-              // Calculate completion rate based on total instances or task count
               const totalGoalInstances = taskInstances.filter((inst) => goalTaskIds.has(inst.taskId));
               const completionPct = totalGoalInstances.length > 0
                 ? Math.round((goalCompletedInstances.length / totalGoalInstances.length) * 100)
