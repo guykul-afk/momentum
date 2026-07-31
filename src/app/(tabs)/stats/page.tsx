@@ -189,6 +189,96 @@ export default function StatsPage() {
 
         <FocusRatioPieChart data={pieChartData} />
       </div>
+
+      {/* Goal Tasks Allocation & Completion Breakdown */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+            <Target className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-800">ניתוח הקצאת משימות ואחוזי השלמה לפי יעד</h2>
+            <p className="text-[11px] text-slate-400">
+              אחוז המשימות שמשויכות לכל יעד מסך כל המשימות, ואחוז ההשלמה הפעיל של המשימות בכל יעד
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4 pt-1">
+          {goals.length === 0 ? (
+            <div className="text-center py-6 text-slate-400 text-xs font-medium">
+              אין יעדים מוגדרים במערכת כעת
+            </div>
+          ) : (
+            goals.map((goal) => {
+              const goalTasks = tasks.filter((t) => t.goalId === goal.id);
+              const totalTasksCount = tasks.length;
+              
+              // 1. Percentage of total tasks allocated to this specific goal
+              const allocationPct = totalTasksCount > 0 
+                ? Math.round((goalTasks.length / totalTasksCount) * 100) 
+                : 0;
+
+              // 2. Completion percentage of tasks for this specific goal
+              const goalTaskIds = new Set(goalTasks.map((t) => t.id));
+              const goalCompletedInstances = completedInstances.filter((inst) => goalTaskIds.has(inst.taskId));
+              
+              // Calculate completion rate based on total instances or task count
+              const totalGoalInstances = taskInstances.filter((inst) => goalTaskIds.has(inst.taskId));
+              const completionPct = totalGoalInstances.length > 0
+                ? Math.round((goalCompletedInstances.length / totalGoalInstances.length) * 100)
+                : goalTasks.length > 0 && goalTasks.every((t) => !t.isActive)
+                ? 100
+                : 0;
+
+              return (
+                <div key={goal.id} className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/60 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">{goal.title}</span>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-cyan-100/80 text-cyan-800">
+                      {goalTasks.length} משימות משויכות
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {/* Bar 1: Task Allocation % */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] text-slate-600 font-medium">
+                        <span>אחוז הקצאת משימות:</span>
+                        <span className="font-bold text-slate-800">{allocationPct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-cyan-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${allocationPct}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400">מסך כל {totalTasksCount} המשימות</p>
+                    </div>
+
+                    {/* Bar 2: Task Completion % */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] text-slate-600 font-medium">
+                        <span>אחוז השלמת משימות:</span>
+                        <span className="font-bold text-emerald-700">{completionPct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${completionPct}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        {goalCompletedInstances.length} מתוך {totalGoalInstances.length || goalTasks.length} הושלמו
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
 }
