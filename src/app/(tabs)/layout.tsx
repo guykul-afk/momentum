@@ -64,11 +64,11 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => openQuickAdd('goal')}
+                onClick={() => openQuickAdd('task')}
                 className="flex items-center gap-1 px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white text-xs font-bold rounded-full shadow-xs transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>יעד חדש</span>
+                <span>משימה חדשה</span>
               </button>
 
               <SyncStatusBadge />
@@ -143,16 +143,16 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
           })}
         </nav>
 
-        {/* Floating Action Button (FAB) for Quick Goal/Task Addition */}
+        {/* Floating Action Button (FAB) for Quick Task Addition */}
         <button
           type="button"
-          onClick={() => openQuickAdd('goal')}
-          title="הוסף יעד או משימה"
+          onClick={() => openQuickAdd('task')}
+          title="הוסף משימה חדשה"
           className="fixed bottom-20 left-6 sm:left-auto z-40 p-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl active:scale-90 transition-all flex items-center justify-center group"
         >
           <Plus className="w-6 h-6 stroke-[2.5]" />
           <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-xs font-bold mr-0 group-hover:mr-1.5">
-            הוסף יעד / משימה
+            משימה חדשה
           </span>
         </button>
 
