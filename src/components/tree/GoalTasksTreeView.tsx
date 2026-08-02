@@ -12,6 +12,8 @@ import {
   Target,
   LayoutGrid,
   List,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { Goal, Task, TaskInstance, KeyResult } from '@/types/models';
 import { GoalTaskTreeNode } from './GoalTaskTreeNode';
@@ -35,6 +37,7 @@ export function GoalTasksTreeView({
   const [timeframeFilter, setTimeframeFilter] = useState<'all' | 'annual' | 'quarterly' | 'monthly'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [allExpanded, setAllExpanded] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Active non-archived goals
   const activeGoals = useMemo(() => {
@@ -110,9 +113,9 @@ export function GoalTasksTreeView({
         </div>
       </div>
 
-      {/* Control Toolbar (View Mode Switcher, Search, Filter, Expand/Collapse All) */}
+      {/* Control Toolbar */}
       <div className="bg-slate-100/90 p-2.5 rounded-2xl space-y-2.5">
-        {/* Top Row: View Switcher & Search */}
+        {/* Top Row: View Switcher, Fullscreen Button & Search */}
         <div className="flex flex-col sm:flex-row gap-2 items-center justify-between">
           {/* View Mode Toggle Switch */}
           <div className="flex items-center p-1 bg-white border border-slate-200 rounded-xl w-full sm:w-auto shrink-0 shadow-2xs">
@@ -126,7 +129,7 @@ export function GoalTasksTreeView({
               }`}
             >
               <LayoutGrid className="w-4 h-4" />
-              <span>תרשים דיאגרמה (Diagram)</span>
+              <span>תרשים דיאגרמה</span>
             </button>
 
             <button
@@ -139,9 +142,22 @@ export function GoalTasksTreeView({
               }`}
             >
               <List className="w-4 h-4" />
-              <span>תצוגת רשימה (List)</span>
+              <span>תצוגת רשימה</span>
             </button>
           </div>
+
+          {/* Fullscreen Modal Toggle Button */}
+          {viewMode === 'diagram' && (
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(true)}
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-2xs transition-colors shrink-0"
+              title="פתח במסך מלא"
+            >
+              <Maximize2 className="w-4 h-4 text-cyan-400" />
+              <span>מסך מלא</span>
+            </button>
+          )}
 
           {/* Search Input */}
           <div className="relative w-full sm:flex-1">
@@ -253,6 +269,37 @@ export function GoalTasksTreeView({
               />
             );
           })}
+        </div>
+      )}
+
+      {/* Fullscreen Overlay Modal */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md p-3 sm:p-5 flex flex-col space-y-3 animate-in fade-in duration-200">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between bg-slate-800/90 p-3 rounded-2xl border border-slate-700 text-white shrink-0 shadow-lg">
+            <div className="flex items-center gap-2">
+              <FolderTree className="w-5 h-5 text-cyan-400" />
+              <span className="font-extrabold text-sm sm:text-base">תרשים עץ יעדים - מסך מלא</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+            >
+              <Minimize2 className="w-4 h-4" />
+              <span>סגור מסך מלא</span>
+            </button>
+          </div>
+
+          {/* Modal Scroll Canvas */}
+          <div className="flex-1 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60 p-1 flex flex-col">
+            <GoalOrgChartDiagram
+              goals={filteredGoals}
+              tasks={tasks}
+              taskInstances={taskInstances}
+              keyResults={keyResults}
+            />
+          </div>
         </div>
       )}
     </div>

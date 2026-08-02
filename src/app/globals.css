@@ -57,3 +57,22 @@ a, button {
   min-height: calc(64px + max(20px, env(safe-area-inset-bottom, 20px))) !important;
   box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.12) !important;
 }
+
+/* Landscape Mode Auto-Expansion & Fullscreen Rules */
+@media (orientation: landscape) {
+  .app-page-wrapper {
+    max-width: 100% !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+  .app-bottom-nav {
+    max-width: 100% !important;
+  }
+}
+
+.tree-canvas-scroll {
+  touch-action: pan-x pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+}
+

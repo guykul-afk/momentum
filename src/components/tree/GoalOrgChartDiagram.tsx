@@ -313,8 +313,8 @@ export function GoalOrgChartDiagram({
   }
 
   return (
-    <div className="w-full overflow-x-auto p-4 sm:p-6 bg-slate-100/70 rounded-2xl border border-slate-200/80 min-h-[450px]">
-      <div className="min-w-max flex flex-col items-center space-y-8">
+    <div className="w-full tree-canvas-scroll overflow-auto p-4 sm:p-6 bg-slate-100/70 rounded-2xl border border-slate-200/80 min-h-[450px] max-h-[85vh] landscape:max-h-[90vh]">
+      <div className="min-w-max flex flex-col items-center space-y-8 py-2 px-4">
         {rootGoals.map((rootGoal) => (
           <OrgChartNode
             key={rootGoal.id}

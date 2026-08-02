@@ -57,7 +57,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-800 flex justify-center">
       {/* Mobile-width container with top safe-area padding and bottom navigation padding */}
-      <div className="w-full max-w-md bg-white min-h-screen flex flex-col relative border-x border-slate-200/60 app-page-wrapper">
+      <div className="w-full max-w-md landscape:max-w-none bg-white min-h-screen flex flex-col relative border-x border-slate-200/60 app-page-wrapper">
         
         {/* Top Header Bar with Sync Status Indicator & Quick Add Button */}
         <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 px-3 py-2 flex flex-col gap-2">
