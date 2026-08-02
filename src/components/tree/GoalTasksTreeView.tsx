@@ -10,9 +10,12 @@ import {
   ChevronDown,
   ChevronUp,
   Target,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { Goal, Task, TaskInstance, KeyResult } from '@/types/models';
 import { GoalTaskTreeNode } from './GoalTaskTreeNode';
+import { GoalOrgChartDiagram } from './GoalOrgChartDiagram';
 
 interface GoalTasksTreeViewProps {
   goals: Goal[];
@@ -27,6 +30,7 @@ export function GoalTasksTreeView({
   taskInstances,
   keyResults,
 }: GoalTasksTreeViewProps) {
+  const [viewMode, setViewMode] = useState<'diagram' | 'list'>('diagram');
   const [searchQuery, setSearchQuery] = useState('');
   const [timeframeFilter, setTimeframeFilter] = useState<'all' | 'annual' | 'quarterly' | 'monthly'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -106,9 +110,39 @@ export function GoalTasksTreeView({
         </div>
       </div>
 
-      {/* Control Toolbar (Search, Filter, Expand/Collapse All) */}
-      <div className="bg-slate-100/90 p-2 rounded-2xl space-y-2">
+      {/* Control Toolbar (View Mode Switcher, Search, Filter, Expand/Collapse All) */}
+      <div className="bg-slate-100/90 p-2.5 rounded-2xl space-y-2.5">
+        {/* Top Row: View Switcher & Search */}
         <div className="flex flex-col sm:flex-row gap-2 items-center justify-between">
+          {/* View Mode Toggle Switch */}
+          <div className="flex items-center p-1 bg-white border border-slate-200 rounded-xl w-full sm:w-auto shrink-0 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setViewMode('diagram')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'diagram'
+                  ? 'bg-cyan-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span>תרשים דיאגרמה (Diagram)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'list'
+                  ? 'bg-cyan-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span>תצוגת רשימה (List)</span>
+            </button>
+          </div>
+
           {/* Search Input */}
           <div className="relative w-full sm:flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
@@ -121,24 +155,26 @@ export function GoalTasksTreeView({
             />
           </div>
 
-          {/* Toggle Expand All */}
-          <button
-            type="button"
-            onClick={() => setAllExpanded(!allExpanded)}
-            className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 shadow-2xs transition-colors shrink-0"
-          >
-            {allExpanded ? (
-              <>
-                <ChevronUp className="w-4 h-4 text-slate-500" />
-                <span>כווץ הכל</span>
-              </>
-            ) : (
-              <>
-                <ChevronDown className="w-4 h-4 text-slate-500" />
-                <span>הרחב הכל</span>
-              </>
-            )}
-          </button>
+          {/* Toggle Expand All (List Mode) */}
+          {viewMode === 'list' && (
+            <button
+              type="button"
+              onClick={() => setAllExpanded(!allExpanded)}
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 shadow-2xs transition-colors shrink-0"
+            >
+              {allExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4 text-slate-500" />
+                  <span>כווץ הכל</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 text-slate-500" />
+                  <span>הרחב הכל</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Filter Pills */}
@@ -183,7 +219,7 @@ export function GoalTasksTreeView({
         </div>
       </div>
 
-      {/* Tree Content */}
+      {/* Main Content Area */}
       {rootGoals.length === 0 ? (
         <div className="bg-white rounded-2xl p-8 text-center border border-dashed border-slate-300">
           <FolderTree className="w-10 h-10 text-slate-300 mx-auto mb-2" />
@@ -192,6 +228,13 @@ export function GoalTasksTreeView({
             לא נמצאו יעדים המתאימים למילת החיפוש או לסינונים שנבחרו.
           </p>
         </div>
+      ) : viewMode === 'diagram' ? (
+        <GoalOrgChartDiagram
+          goals={filteredGoals}
+          tasks={tasks}
+          taskInstances={taskInstances}
+          keyResults={keyResults}
+        />
       ) : (
         <div className="space-y-4">
           {rootGoals.map((rootGoal) => {
