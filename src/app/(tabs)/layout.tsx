@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CalendarCheck, Target, TrendingUp, Plus } from 'lucide-react';
+import { CalendarCheck, Target, TrendingUp, Plus, FolderTree } from 'lucide-react';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { QuickAddModal } from '@/components/QuickAddModal';
 
@@ -34,6 +34,11 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       href: '/goals',
       label: 'יעדים',
       icon: Target,
+    },
+    {
+      href: '/tree',
+      label: 'עץ',
+      icon: FolderTree,
     },
     {
       href: '/stats',
