@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CalendarCheck, Target, TrendingUp, Plus, FolderTree } from 'lucide-react';
+import { CalendarCheck, Target, TrendingUp, Plus, FolderTree, Archive } from 'lucide-react';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { QuickAddModal } from '@/components/QuickAddModal';
 
@@ -29,6 +29,11 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
       href: '/today',
       label: 'היום',
       icon: CalendarCheck,
+    },
+    {
+      href: '/archive',
+      label: 'ארכיון',
+      icon: Archive,
     },
     {
       href: '/goals',

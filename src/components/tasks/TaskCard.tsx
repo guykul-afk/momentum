@@ -18,9 +18,10 @@ export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, on
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const getWeightBadgeColor = (weight: number = 3) => {
-    if (weight >= 4) return 'bg-cyan-100 text-cyan-800 border-cyan-300';
+    if (weight >= 5) return 'bg-rose-100 text-rose-800 border-rose-300 font-extrabold';
+    if (weight === 4) return 'bg-cyan-100 text-cyan-800 border-cyan-300 font-bold';
     if (weight === 3) return 'bg-slate-100 text-slate-700 border-slate-200';
-    return 'bg-slate-50 text-slate-600 border-slate-200';
+    return 'bg-slate-50 text-slate-500 border-slate-200';
   };
 
   const getPostponeStripeColor = (count: number = 0) => {
@@ -37,7 +38,9 @@ export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, on
       className={`group relative flex items-start gap-3 p-3.5 rounded-2xl border transition-all duration-200 ${postponeStripe} ${
         isCompleted
           ? 'bg-slate-50/60 border-slate-200 opacity-75'
-          : task.weight && task.weight >= 4
+          : task.weight && task.weight >= 5
+          ? 'bg-white border-rose-200 shadow-sm hover:border-rose-400'
+          : task.weight && task.weight === 4
           ? 'bg-white border-cyan-200/90 shadow-sm hover:border-cyan-400'
           : 'bg-white border-slate-200 shadow-sm hover:border-slate-300'
       }`}
@@ -68,14 +71,14 @@ export function TaskCard({ task, isCompleted, onToggle, onPostponeToTomorrow, on
           </h4>
 
           <div className="flex items-center gap-1 shrink-0">
-            {/* Weight Badge */}
+            {/* Weight / Importance Badge */}
             {task.weight && (
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getWeightBadgeColor(
+                className={`text-[10px] px-2 py-0.5 rounded-full border ${getWeightBadgeColor(
                   task.weight
                 )}`}
               >
-                משקל {task.weight}
+                חשיבות {task.weight}
               </span>
             )}
 

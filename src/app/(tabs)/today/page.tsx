@@ -14,7 +14,6 @@ import { Task } from '@/types/models';
 
 export default function TodayPage() {
   const { tasks, taskInstances, dailyStats, goals, toggleTaskInstance, postponeTaskToTomorrow, deleteTask } = useAppStore();
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -26,28 +25,37 @@ export default function TodayPage() {
     month: 'long',
   });
 
-  // Filter tasks by categories
-  const dailyTasks = tasks.filter((t) => t.type === 'daily' && !t.isHabit && !t.isMaintenance && t.isActive);
-  const maintenanceTasks = tasks.filter((t) => t.isMaintenance && t.isActive);
-  const habitTasks = tasks.filter((t) => t.isHabit && t.isActive);
+  // Priority sorting helper: weight descending (5 -> 1), then createdAt descending
+  const sortByImportance = (a: Task, b: Task) => {
+    const weightA = a.weight ?? 3;
+    const weightB = b.weight ?? 3;
+    if (weightB !== weightA) return weightB - weightA;
+    return b.createdAt - a.createdAt;
+  };
+
+  // Filter tasks by categories and sort by level of importance
+  const rawDailyTasks = tasks.filter((t) => t.type === 'daily' && !t.isHabit && !t.isMaintenance && t.isActive);
+  const maintenanceTasks = tasks.filter((t) => t.isMaintenance && t.isActive).sort(sortByImportance);
+  const habitTasks = tasks.filter((t) => t.isHabit && t.isActive).sort(sortByImportance);
 
   // Daily quota calculation using lib metrics
   const dailyQuotaCount = computeDailyQuota(tasks);
 
   // Completed daily tasks count for today
-  const todayCompletedCount = dailyTasks.filter((t) => {
+  const todayCompletedCount = rawDailyTasks.filter((t) => {
     const inst = taskInstances.find((i) => i.taskId === t.id && i.date === todayStr);
     return inst?.status === 'completed';
   }).length;
 
-  // Filtered daily tasks based on view filter
-  const displayedDailyTasks = dailyTasks.filter((t) => {
-    const inst = taskInstances.find((i) => i.taskId === t.id && i.date === todayStr);
-    const isCompleted = inst?.status === 'completed';
-    if (filter === 'pending') return !isCompleted;
-    if (filter === 'completed') return isCompleted;
-    return true;
-  });
+  // Active (uncompleted) daily tasks sorted by level of importance
+  const activeDailyTasks = rawDailyTasks
+    .filter((t) => {
+      const inst = taskInstances.find((i) => i.taskId === t.id && i.date === todayStr);
+      return inst?.status !== 'completed';
+    })
+    .sort(sortByImportance);
+
+  const displayedDailyTasks = activeDailyTasks;
 
   return (
     <div className="space-y-6">
@@ -75,7 +83,7 @@ export default function TodayPage() {
             </h2>
             <DailyQuotaRing
               completed={todayCompletedCount}
-              total={Math.max(dailyQuotaCount, dailyTasks.length)}
+              total={Math.max(dailyQuotaCount, rawDailyTasks.length)}
             />
           </div>
 
@@ -104,43 +112,14 @@ export default function TodayPage() {
             <ListTodo className="w-4 h-4 text-cyan-600" />
             <h2 className="text-base font-bold text-slate-900">משימות היום</h2>
             <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-              {dailyTasks.length}
+              {activeDailyTasks.length} לביצוע
             </span>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-medium">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
-                filter === 'all'
-                  ? 'bg-white text-cyan-700 font-bold shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              הכל
-            </button>
-            <button
-              onClick={() => setFilter('pending')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
-                filter === 'pending'
-                  ? 'bg-white text-cyan-700 font-bold shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              לביצוע
-            </button>
-            <button
-              onClick={() => setFilter('completed')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
-                filter === 'completed'
-                  ? 'bg-white text-cyan-700 font-bold shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              הושלמו
-            </button>
-          </div>
+          {/* Priority sorting indicator */}
+          <span className="text-[11px] font-semibold text-cyan-700 bg-cyan-50 border border-cyan-200/80 px-2.5 py-0.5 rounded-full">
+            ממוין לפי חשיבות ⚡
+          </span>
         </div>
 
         {/* Task Cards List */}
@@ -148,8 +127,10 @@ export default function TodayPage() {
           {displayedDailyTasks.length === 0 ? (
             <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-4">
               <CheckCircle2 className="w-8 h-8 text-cyan-500 mx-auto mb-2 opacity-70" />
-              <p className="text-xs font-semibold text-slate-600">אין משימות בקטגוריה זו</p>
-              <p className="text-[11px] text-slate-400 mt-1">כל הכבוד! נצל את הזמן להתרעננות</p>
+              <p className="text-xs font-semibold text-slate-600">אין משימות לביצוע ברשימה הכללית</p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                משימות שהושלמו הועברו לארכיון המשימות! כל הכבוד 🎉
+              </p>
             </div>
           ) : (
             displayedDailyTasks.map((task) => {
