@@ -16,6 +16,7 @@ export function QuickAddModal({ isOpen, onClose }: QuickAddModalProps) {
   // Task Form State
   const [taskTitle, setTaskTitle] = useState('');
   const [taskCategory, setTaskCategory] = useState<'work' | 'personal' | 'health' | 'maintenance'>('work');
+  const [taskType, setTaskType] = useState<'one-off' | 'daily'>('one-off');
   const [taskGoalId, setTaskGoalId] = useState('');
   const [taskKeyResultId, setTaskKeyResultId] = useState('');
   const [taskWeight, setTaskWeight] = useState<1 | 2 | 3 | 4 | 5>(3);
@@ -28,6 +29,7 @@ export function QuickAddModal({ isOpen, onClose }: QuickAddModalProps) {
       setTaskGoalId('');
       setTaskKeyResultId('');
       setTaskCategory('work');
+      setTaskType('one-off');
       setTaskWeight(3);
       setTaskMinutes(30);
       setTaskTargetDate('today');
@@ -48,7 +50,7 @@ export function QuickAddModal({ isOpen, onClose }: QuickAddModalProps) {
         keyResultId: taskKeyResultId || undefined,
         weight: taskWeight,
         estimatedMinutes: taskMinutes,
-        type: 'daily',
+        type: taskType,
       },
       taskTargetDate
     );
@@ -99,6 +101,34 @@ export function QuickAddModal({ isOpen, onClose }: QuickAddModalProps) {
               placeholder="לדוגמה: בדיקת UI ורספונסיביות"
               className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 font-medium"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">סוג משימה</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setTaskType('one-off')}
+                className={`py-1.5 text-[11px] font-bold rounded-xl border transition-all ${
+                  taskType === 'one-off'
+                    ? 'bg-slate-800 text-white border-slate-800'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                חד-פעמית (סגירה בארכיון)
+              </button>
+              <button
+                type="button"
+                onClick={() => setTaskType('daily')}
+                className={`py-1.5 text-[11px] font-bold rounded-xl border transition-all ${
+                  taskType === 'daily'
+                    ? 'bg-slate-800 text-white border-slate-800'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                יומית מחזורית (מתחדשת כל יום)
+              </button>
+            </div>
           </div>
 
           <div>

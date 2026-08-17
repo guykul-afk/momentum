@@ -8,19 +8,8 @@ import {
   getPostponedMonthlyEndDate,
   getPostponedAnnualEndDate,
   getDefaultAnnualEndDate,
-  getDefaultMonthlyEndDate,
 } from './goalUtils';
-
-function getTodayDateString(): string {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
-}
-
-function getTomorrowDateString(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
-}
+import { getTodayDateString, getTomorrowDateString } from './dateUtils';
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline';
 
@@ -173,7 +162,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsLoaded(true);
     }
 
-    // Real-time Firestore Listeners for ALL collections with 2-way merging & auto-sync
+    // Real-time Firestore Listeners for ALL collections
     const unsubGoals = onSnapshot(
       collection(db, 'goals'),
       (snapshot) => {
@@ -220,16 +209,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       collection(db, 'taskInstances'),
       (snapshot) => {
         const serverItems = snapshot.docs.map((d) => d.data() as TaskInstance);
-        setTaskInstances((prevLocal) => {
-          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
-          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
-          unsynced.forEach((item) => {
-            safeSetDoc(doc(db, 'taskInstances', item.id), item).catch((err) =>
-              console.warn('Failed auto-syncing local instance to Firestore:', err)
-            );
-          });
-          return [...serverItems, ...unsynced];
-        });
+        setTaskInstances(serverItems);
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -243,16 +223,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       collection(db, 'rawCaptures'),
       (snapshot) => {
         const serverItems = snapshot.docs.map((d) => d.data() as RawCaptureItem);
-        setRawCaptures((prevLocal) => {
-          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
-          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
-          unsynced.forEach((item) => {
-            safeSetDoc(doc(db, 'rawCaptures', item.id), item).catch((err) =>
-              console.warn('Failed auto-syncing local capture to Firestore:', err)
-            );
-          });
-          return [...serverItems, ...unsynced];
-        });
+        setRawCaptures(serverItems);
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -266,16 +237,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       collection(db, 'reflections'),
       (snapshot) => {
         const serverItems = snapshot.docs.map((d) => d.data() as EndOfDayReflection);
-        setReflections((prevLocal) => {
-          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
-          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
-          unsynced.forEach((item) => {
-            safeSetDoc(doc(db, 'reflections', item.id), item).catch((err) =>
-              console.warn('Failed auto-syncing local reflection to Firestore:', err)
-            );
-          });
-          return [...serverItems, ...unsynced];
-        });
+        setReflections(serverItems);
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -289,16 +251,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       collection(db, 'krCheckins'),
       (snapshot) => {
         const serverItems = snapshot.docs.map((d) => d.data() as KrCheckin);
-        setKrCheckins((prevLocal) => {
-          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
-          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
-          unsynced.forEach((item) => {
-            safeSetDoc(doc(db, 'krCheckins', item.id), item).catch((err) =>
-              console.warn('Failed auto-syncing local checkin to Firestore:', err)
-            );
-          });
-          return [...serverItems, ...unsynced];
-        });
+        setKrCheckins(serverItems);
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -312,16 +265,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       collection(db, 'weeklyPlans'),
       (snapshot) => {
         const serverItems = snapshot.docs.map((d) => d.data() as WeeklyPlan);
-        setWeeklyPlans((prevLocal) => {
-          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
-          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
-          unsynced.forEach((item) => {
-            safeSetDoc(doc(db, 'weeklyPlans', item.id), item).catch((err) =>
-              console.warn('Failed auto-syncing local plan to Firestore:', err)
-            );
-          });
-          return [...serverItems, ...unsynced];
-        });
+        setWeeklyPlans(serverItems);
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -335,16 +279,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       collection(db, 'monthlyReports'),
       (snapshot) => {
         const serverItems = snapshot.docs.map((d) => d.data() as MonthlyCloseReport);
-        setMonthlyReports((prevLocal) => {
-          const serverMap = new Map(serverItems.map((item) => [item.id, item]));
-          const unsynced = prevLocal.filter((local) => !serverMap.has(local.id));
-          unsynced.forEach((item) => {
-            safeSetDoc(doc(db, 'monthlyReports', item.id), item).catch((err) =>
-              console.warn('Failed auto-syncing local report to Firestore:', err)
-            );
-          });
-          return [...serverItems, ...unsynced];
-        });
+        setMonthlyReports(serverItems);
         setSyncStatus('synced');
         setLastSyncedAt(Date.now());
       },
@@ -388,41 +323,67 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const toggleTaskInstance = (taskId: string) => {
     const today = getTodayDateString();
+    const instanceId = `inst_${taskId}_${today}`;
     let updatedInstance: TaskInstance;
 
-    const existing = taskInstances.find((i) => i.taskId === taskId && i.date === today);
+    const existing = taskInstances.find(
+      (i) => i.id === instanceId || (i.taskId === taskId && i.date === today)
+    );
+
+    const willBeCompleted = existing ? existing.status !== 'completed' : true;
+
     if (existing) {
       updatedInstance = {
         ...existing,
-        status: existing.status === 'completed' ? 'pending' : 'completed',
-        completedAt: existing.status === 'completed' ? undefined : Date.now(),
+        id: instanceId,
+        status: willBeCompleted ? 'completed' : 'pending',
+        completedAt: willBeCompleted ? Date.now() : undefined,
       };
-      setTaskInstances((prev) => prev.map((i) => (i.id === existing.id ? updatedInstance : i)));
+      setTaskInstances((prev) =>
+        prev.map((i) => (i.id === existing.id || i.id === instanceId ? updatedInstance : i))
+      );
     } else {
       updatedInstance = {
-        id: `inst-${Date.now()}`,
+        id: instanceId,
         uid: 'user-1',
         taskId,
         date: today,
         status: 'completed',
         completedAt: Date.now(),
       };
-      setTaskInstances((prev) => [...prev, updatedInstance]);
+      setTaskInstances((prev) => [...prev.filter((i) => i.id !== instanceId), updatedInstance]);
     }
 
     // Save instance to Firestore
-    saveToFirestore(() => safeSetDoc(doc(db, 'taskInstances', updatedInstance.id), updatedInstance));
+    saveToFirestore(() => safeSetDoc(doc(db, 'taskInstances', instanceId), updatedInstance));
 
-    // Update habit streak in tasks if applicable
+    // Update habit streak or active status for one-off tasks
     setTasks((prevTasks) =>
       prevTasks.map((t) => {
-        if (t.id === taskId && t.isHabit) {
-          const wasCompleted = existing?.status === 'completed';
-          const newStreak = wasCompleted
-            ? Math.max(0, (t.streakCount || 1) - 1)
-            : (t.streakCount || 0) + 1;
-          const updatedTask = { ...t, streakCount: newStreak };
-          saveToFirestore(() => safeSetDoc(doc(db, 'tasks', taskId), updatedTask, { merge: true }));
+        if (t.id === taskId) {
+          let updatedTask = t;
+          let changed = false;
+
+          if (t.isHabit) {
+            const wasCompleted = existing?.status === 'completed';
+            const newStreak = wasCompleted
+              ? Math.max(0, (t.streakCount || 1) - 1)
+              : (t.streakCount || 0) + 1;
+            updatedTask = { ...updatedTask, streakCount: newStreak, updatedAt: Date.now() };
+            changed = true;
+          }
+
+          if (t.type === 'one-off' || !t.type) {
+            const newIsActive = !willBeCompleted;
+            if (updatedTask.isActive !== newIsActive) {
+              updatedTask = { ...updatedTask, isActive: newIsActive, updatedAt: Date.now() };
+              changed = true;
+            }
+          }
+
+          if (changed) {
+            saveToFirestore(() => safeSetDoc(doc(db, 'tasks', taskId), updatedTask, { merge: true }));
+          }
           return updatedTask;
         }
         return t;
@@ -467,12 +428,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       uid: 'user-1',
       title: taskData.title || 'משימה חדשה',
       description: taskData.description || '',
-      type: taskData.type || 'daily',
+      type: taskData.type || 'one-off',
       isActive: true,
       weight: taskData.weight || 3,
       estimatedMinutes: taskData.estimatedMinutes || 30,
       category: taskData.category || 'work',
       goalId: taskData.goalId,
+      keyResultId: taskData.keyResultId,
       when: taskData.when,
       where: taskData.where,
       isHabit: taskData.isHabit,
@@ -482,9 +444,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updatedAt: Date.now(),
     };
 
-    setTasks((prev) => [newTask, ...prev]);
-    saveToFirestore(() => safeSetDoc(doc(db, 'tasks', newTask.id), newTask));
-
     const targetDateStr =
       targetDate === 'tomorrow'
         ? getTomorrowDateString()
@@ -492,16 +451,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ? targetDate
         : getTodayDateString();
 
+    const instanceId = `inst_${newTask.id}_${targetDateStr}`;
     const newInstance: TaskInstance = {
-      id: `inst-${Date.now()}`,
+      id: instanceId,
       uid: 'user-1',
       taskId: newTask.id,
       date: targetDateStr,
       status: 'pending',
     };
 
-    setTaskInstances((prev) => [...prev, newInstance]);
-    saveToFirestore(() => safeSetDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
+    setTasks((prev) => [newTask, ...prev]);
+    setTaskInstances((prev) => [...prev.filter((i) => i.id !== instanceId), newInstance]);
+
+    saveToFirestore(async () => {
+      await safeSetDoc(doc(db, 'tasks', newTask.id), newTask);
+      await safeSetDoc(doc(db, 'taskInstances', instanceId), newInstance);
+    });
 
     return newTask;
   };
@@ -562,14 +527,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteTask = (taskId: string) => {
+    const instancesToDelete = taskInstances.filter((i) => i.taskId === taskId);
+
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
     setTaskInstances((prev) => prev.filter((i) => i.taskId !== taskId));
-    saveToFirestore(() => deleteDoc(doc(db, 'tasks', taskId)));
+
+    saveToFirestore(async () => {
+      await deleteDoc(doc(db, 'tasks', taskId));
+      for (const inst of instancesToDelete) {
+        await deleteDoc(doc(db, 'taskInstances', inst.id)).catch(() => {});
+      }
+    });
   };
 
   const postponeTaskToTomorrow = (taskId: string) => {
     const todayStr = getTodayDateString();
     const tomorrowStr = getTomorrowDateString();
+    const tomorrowInstId = `inst_${taskId}_${tomorrowStr}`;
+    const todayInstId = `inst_${taskId}_${todayStr}`;
 
     setTasks((prev) =>
       prev.map((t) => {
@@ -583,7 +558,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
 
     const newInstance: TaskInstance = {
-      id: `inst-${Date.now()}`,
+      id: tomorrowInstId,
       uid: 'user-1',
       taskId,
       date: tomorrowStr,
@@ -595,7 +570,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return [...filtered, newInstance];
     });
 
-    saveToFirestore(() => safeSetDoc(doc(db, 'taskInstances', newInstance.id), newInstance));
+    saveToFirestore(async () => {
+      await safeSetDoc(doc(db, 'taskInstances', tomorrowInstId), newInstance);
+      await deleteDoc(doc(db, 'taskInstances', todayInstId)).catch(() => {});
+    });
   };
 
   const addGoal = (goalData: Omit<Goal, 'id' | 'uid' | 'createdAt' | 'updatedAt'>) => {

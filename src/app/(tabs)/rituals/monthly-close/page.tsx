@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { MonthlyCloseReport, KrCheckin } from '@/types/models';
+import { getTodayDateString } from '@/lib/dateUtils';
 
 export default function MonthlyCloseRitualPage() {
   const { goals, keyResults, addKrCheckin, saveMonthlyCloseReport } = useAppStore();
@@ -60,24 +61,30 @@ export default function MonthlyCloseRitualPage() {
         })
         .map((kr) => kr.title);
 
-      const report: MonthlyCloseReport['aiAnalysis'] = {
-        summary: 'ניתוח סיכום חודשי: מעקב חודשי פעיל והתקדמות במדדי היעדים וה-KR.',
-        highRoiGoals: highRoi.length > 0 ? highRoi : ['פיתוח 4 ריטואלים עיקריים ומערכת יעדים'],
-        starvedGoals: [],
-        effortOutcomeCorrelation: 0.85,
-        strategicAdvice: [
-          'המשך להתמיד בעדכון בדיקות KR שבועי וחודשי.',
-          'יעדי הבריאות והכושר הראו התקדמות יציבה - מומלץ לשמר את התדירות השבועית.',
-          'וודא קישור כל משימה שבועית ליעד רבעוני/חודשי ברור.',
-        ],
-      };
+      const starved = keyResults
+        .filter((kr) => {
+          const krTarget = kr.target || 1;
+          const krPct = (krValues[kr.id] ?? kr.current) / krTarget;
+          return krPct < 0.2;
+        })
+        .map((kr) => kr.title);
 
-      setAiReport(report);
+      setAiReport({
+        summary: 'ניתוח חודשי הושלם: זוהו יעדים עם מומנטום גבוה לצד יעדים הזקוקים לתשומת לב מחודשת.',
+        highRoiGoals: highRoi.slice(0, 3),
+        starvedGoals: starved.slice(0, 3),
+        effortOutcomeCorrelation: 0.82,
+        strategicAdvice: [
+          'הקצה יותר מכסות שבועיות ליעדים שהתקדמותם נמוכה מ-20%.',
+          'שמר את המומנטום ביעדי ה-High ROI על ידי חלוקתם למשימות יומיות קטנות.',
+        ],
+      });
       setIsGeneratingAi(false);
-    }, 900);
+    }, 1000);
   };
 
   const handleSubmitMonthlyClose = () => {
+    const todayStr = getTodayDateString();
     // 1. Submit all KR check-ins
     const checkinList: KrCheckin[] = [];
     keyResults.forEach((kr) => {
@@ -92,7 +99,7 @@ export default function MonthlyCloseRitualPage() {
         value: val,
         confidenceScore: kr.confidenceScore || 7,
         notes: note,
-        date: new Date().toISOString().split('T')[0],
+        date: todayStr,
         createdAt: Date.now(),
       });
     });

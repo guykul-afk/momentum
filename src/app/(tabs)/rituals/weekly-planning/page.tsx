@@ -13,6 +13,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { getTodayDateString } from '@/lib/dateUtils';
 import { WeeklyPlan } from '@/types/models';
 
 export default function WeeklyPlanningRitualPage() {
@@ -77,7 +78,7 @@ export default function WeeklyPlanningRitualPage() {
     }));
 
     saveWeeklyPlan({
-      weekStartDate: new Date().toISOString().split('T')[0],
+      weekStartDate: getTodayDateString(),
       totalQuotaPoints: totalAllocatedPoints,
       capacityLimit,
       goalAllocations,

@@ -9,6 +9,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { getLocalDateString } from '@/lib/dateUtils';
 import { computeRollingAdherence, computeFocusRatio } from '@/lib/metrics';
 import { AdherenceLineChart, AdherenceDataPoint } from '@/components/charts/AdherenceLineChart';
 import { FocusRatioPieChart, FocusRatioCategoryData } from '@/components/charts/FocusRatioPieChart';
@@ -42,7 +43,7 @@ export default function StatsPage() {
       const variation = (Math.sin(i) * 0.15) + (Math.random() * 0.05);
       const val = Math.min(100, Math.max(40, Math.round((baseAdherence + variation) * 100)));
       lineChartData.push({
-        date: d.toISOString().split('T')[0].slice(5),
+        date: getLocalDateString(d).slice(5),
         adherencePct: val,
         targetPct: 80,
       });

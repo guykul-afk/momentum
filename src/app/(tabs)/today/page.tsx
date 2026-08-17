@@ -12,11 +12,13 @@ import { computeDailyQuota } from '@/lib/metrics';
 import { Calendar, Sparkles, CheckCircle2, ListTodo } from 'lucide-react';
 import { Task } from '@/types/models';
 
+import { getTodayDateString } from '@/lib/dateUtils';
+
 export default function TodayPage() {
   const { tasks, taskInstances, dailyStats, goals, toggleTaskInstance, postponeTaskToTomorrow, deleteTask } = useAppStore();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayDateString();
 
   // Calculate Hebrew date string representation
   const todayFormatted = new Date().toLocaleDateString('he-IL', {
@@ -34,17 +36,18 @@ export default function TodayPage() {
   };
 
   // Filter tasks by categories and sort by level of importance
-  const rawDailyTasks = tasks.filter((t) => t.type === 'daily' && !t.isHabit && !t.isMaintenance && t.isActive);
+  const rawDailyTasks = tasks.filter((t) => (t.type === 'daily' || t.type === 'one-off' || !t.type) && !t.isHabit && !t.isMaintenance && t.isActive);
   const maintenanceTasks = tasks.filter((t) => t.isMaintenance && t.isActive).sort(sortByImportance);
   const habitTasks = tasks.filter((t) => t.isHabit && t.isActive).sort(sortByImportance);
 
   // Daily quota calculation using lib metrics
   const dailyQuotaCount = computeDailyQuota(tasks);
 
-  // Completed daily tasks count for today
-  const todayCompletedCount = rawDailyTasks.filter((t) => {
-    const inst = taskInstances.find((i) => i.taskId === t.id && i.date === todayStr);
-    return inst?.status === 'completed';
+  // Completed daily tasks count for today (includes both active recurring and archived one-off tasks)
+  const todayCompletedCount = taskInstances.filter((i) => {
+    if (i.date !== todayStr || i.status !== 'completed') return false;
+    const task = tasks.find((t) => t.id === i.taskId);
+    return task && (task.type === 'daily' || task.type === 'one-off' || !task.type) && !task.isHabit && !task.isMaintenance;
   }).length;
 
   // Active (uncompleted) daily tasks sorted by level of importance

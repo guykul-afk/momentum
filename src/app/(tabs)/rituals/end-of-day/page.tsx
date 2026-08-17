@@ -13,12 +13,13 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getTodayDateString } from '@/lib/dateUtils';
 
 export default function EndOfDayRitualPage() {
   const { tasks, taskInstances, addReflection, toggleTaskInstance } = useAppStore();
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayDateString();
 
   const dailyTasks = tasks.filter((t) => t.type === 'daily' && !t.isHabit && !t.isMaintenance && t.isActive);
 
